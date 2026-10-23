@@ -1,0 +1,14 @@
+sterling-check.mjs
+.sterling/*
+!.sterling/project.json
+*/**/.sterling/
+sterling.bat
+sterling-windows.bat
+tui.bat
+sterling-launch.sh
+claude-code.bat
+opencode.bat
+claude-code.sh
+opencode.sh
+sterling-update.bat
+.claude/agents/

@@ -1,0 +1,147 @@
+{
+  "permission": {
+    "edit": {
+      "**/.sterling/sterling.db*": "deny",
+      ".sterling/sterling.db*": "deny"
+    }
+  },
+  "agent": {
+    "baseline": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "conductor": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "implementor": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "implementor-terra": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "plan": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "researcher": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "reviewer": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "reviewer-opus": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "scout": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "sparring-partner": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "sterling/conductor": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "sterling/implementor": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "sterling/librarian": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "sterling/researcher": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "sterling/reviewer": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "sterling/scout": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    },
+    "visual-implementor": {
+      "permission": {
+        "edit": {
+          "**/.sterling/sterling.db*": "deny",
+          ".sterling/sterling.db*": "deny"
+        }
+      }
+    }
+  },
+  "default_agent": "sterling/conductor"
+}
