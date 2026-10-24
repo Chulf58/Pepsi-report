@@ -275,6 +275,24 @@ class NemligRowTest(unittest.TestCase):
         self.assertEqual((obs.product, obs.source_id, obs.price_dkk), ("Cult Energy", "9990001", 120.0))
         self.assertEqual(out.text_matched, [])
 
+    def test_single_pack_discount_without_min_quantity_gives_campaign_row(self):
+        # Real shape from nemlig for 5016248 (2026-10-24, next week): a price cut with no MinQuantity.
+        out = self.run_one(nemlig_product({
+            "Type": "ProductCampaignDiscount", "MaxQuantity": 0, "CampaignPrice": 33.0,
+            "DiscountSavings": 8.25, "CampaignUnitPrice": 5.5,
+            "IntervalStart": "2026-10-25T23:00:00Z", "IntervalEnd": "2026-11-01T22:59:59Z"}))
+        normal, camp = out.observations
+        self.assertEqual((camp.price_dkk, camp.campaign, camp.pack), (33.0, True, "6 x 0.33 L cans"))
+        self.assertEqual((camp.valid_from, camp.valid_to), ("2026-10-26", "2026-11-01"))
+        self.assertEqual(out.quarantined, [])
+
+    def test_unknown_campaign_type_without_min_quantity_is_quarantined(self):
+        out = self.run_one(nemlig_product({
+            "Type": "SomethingNew", "CampaignPrice": 33.0,
+            "IntervalStart": "2026-10-25T23:00:00Z", "IntervalEnd": "2026-11-01T22:59:59Z"}))
+        self.assertEqual(len(out.observations), 1)
+        self.assertIn("campaign not understood (SomethingNew)", out.quarantined[0].reason)
+
     def test_unclear_campaign_quarantined(self):
         out = self.run_one(nemlig_product({
             "Type": "X", "MinQuantity": 0, "CampaignPrice": 80.0,

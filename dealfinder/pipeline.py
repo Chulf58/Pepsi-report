@@ -400,14 +400,17 @@ def _nemlig_product(p, today, run_id, outcome, slot="", normal_from=None):
         return
     source_id = "%s@campaign:%s" % (pid, start.isoformat())
     count, total = campaign.get("MinQuantity"), campaign.get("CampaignPrice")
+    if count is None and campaign.get("Type") == "ProductCampaignDiscount":
+        # A plain price cut carries no MinQuantity: CampaignPrice is the price of one pack.
+        count = 1
     if (campaign.get("VariousPriceProductsCampaign") or not isinstance(count, int)
             or isinstance(count, bool) or count < 1 or not _positive(total)):
         quarantine(source_id, "campaign not understood (%s)" % campaign.get("Type"), total,
                    (start.isoformat(), end.isoformat()))
         return
     # "2 for 80" is 40.00 per pack; kr/L is the same as 80 over both packs.
-    observe(source_id, total / count, "%s, %d for %.2f" % (pack, count, total), start.isoformat(),
-            end.isoformat(), True)
+    label = pack if count == 1 else "%s, %d for %.2f" % (pack, count, total)
+    observe(source_id, total / count, label, start.isoformat(), end.isoformat(), True)
 
 
 def normalize_nemlig(products, today, run_id, outcome, slot="", normal_from=None):

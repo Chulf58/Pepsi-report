@@ -156,7 +156,9 @@ class OfflineRunTest(unittest.TestCase):
             self.assertEqual(kr, sorted(kr))
         self.assertEqual([(r["store"], r["kr_per_l"], r["valid_from"]) for r in report
                           if r["section"] == "later"],
-                         [("REMA 1000", "10.61", "2026-10-29"),
+                         [("nemlig.com", "10.35", "2026-10-31"),
+                          ("REMA 1000", "10.61", "2026-10-29"),
+                          ("nemlig.com", "12.37", "2026-10-31"),
                           ("nemlig.com", "20.2", "2026-10-31")])
         html = self.report_html()
         self.assertIn("Quarantine", html)
@@ -302,12 +304,17 @@ class OfflineRunTest(unittest.TestCase):
         self.assertIn("2026102414-60-240, zone 1", {r["delivery_slot"] for r in nemlig})
         later = [r for r in nemlig if r["section"] == "later"]
         # The 2-for-80 campaign of 5007899 runs again from 2026-10-26, so it is dated from the
-        # next slot (2026-10-31); the other nemlig prices are the same next week.
-        self.assertEqual([(r["valid_from"], r["pack"], r["note"], r["delivery_slot"])
-                          for r in later],
-                         [("2026-10-31", "6 x 0.33 L cans, 2 for 80.00", "next week, nemlig slot",
-                           "2026103114-60-240, zone 1")])
-        self.assertIn("Next week's nemlig prices listed (not in history): 1", summary)
+        # next slot (2026-10-31). 5016248 has a new 98.00 price next week and an 82.00 plain
+        # price cut (ProductCampaignDiscount, no MinQuantity) that starts 2026-10-26.
+        self.assertEqual(sorted((r["valid_from"], r["pack"], r["price_dkk"], r["note"],
+                                 r["delivery_slot"]) for r in later),
+                         [("2026-10-31", "24 x 0.33 L cans", "82.0", "next week, nemlig slot",
+                           "2026103114-60-240, zone 1"),
+                          ("2026-10-31", "24 x 0.33 L cans", "98.0", "next week, nemlig slot",
+                           "2026103114-60-240, zone 1"),
+                          ("2026-10-31", "6 x 0.33 L cans, 2 for 80.00", "40.0",
+                           "next week, nemlig slot", "2026103114-60-240, zone 1")])
+        self.assertIn("Next week's nemlig prices listed (not in history): 3", summary)
         # Next week's prices and the slot never reach history.csv.
         rows = load_history(self.history)
         self.assertNotIn("slot", rows[0])
@@ -372,9 +379,20 @@ class OfflineRunTest(unittest.TestCase):
         self.assertIn("| 2026103114-60-240, zone 1 |", text)
 
     def test_offline_run_writes_no_report_md_by_default(self):
+        # The repo-root REPORT.md is committed, so the run must leave it exactly as it was
+        # (content and mtime), or leave it absent if there is none.
+        path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "REPORT.md")
+
+        def snapshot():
+            if not os.path.exists(path):
+                return None
+            with open(path, "rb") as f:
+                return f.read(), os.stat(path).st_mtime_ns
+
+        before = snapshot()
         self.run_cli("2026-10-24")
-        self.assertFalse(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "REPORT.md")))
+        self.assertEqual(snapshot(), before)
 
     def partial_fixtures(self):
         partial = os.path.join(self.tmp, "partial")
