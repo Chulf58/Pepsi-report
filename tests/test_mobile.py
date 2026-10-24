@@ -131,6 +131,29 @@ class PageTest(unittest.TestCase):
         self.assertIn("Source errors", errors)
         never = page(errors=[("rema", "HTTP 500")], last_success="")
         self.assertIn('class="pill stale"', never)
+        self.assertIn("Fresh: collected 24 Oct", fresh)
+
+    def pill(self, html):
+        return re.search(r'<span class="(pill [a-z]+)" id="fresh"[^>]*>([^<]*)</span>', html).groups()
+
+    def test_stale_data_with_source_errors_keeps_both_warnings(self):
+        cls, text = self.pill(page([row("Netto", 75)], errors=[("rema", "HTTP 500")],
+                                   last_success="2026-10-14"))
+        self.assertEqual(cls, "pill stale")
+        self.assertEqual(text, "Stale: the last successful collection is 10 days old; "
+                               "Source errors: some prices may be missing")
+
+    def test_never_collected_with_source_errors_keeps_both_warnings(self):
+        cls, text = self.pill(page(errors=[("rema", "HTTP 500")], last_success=""))
+        self.assertEqual(cls, "pill stale")
+        self.assertEqual(text, "No successful collection on record; Source errors: some prices may be missing")
+
+    def test_page_age_script_adds_to_the_pill_text(self):
+        html = page([row("Netto", 75)], errors=[("rema", "HTTP 500")])
+        script = re.search(r"<script>(.*?)</script>", html, re.S).group(1)
+        self.assertIn("p.textContent += ", script)
+        self.assertNotRegex(script, r"textContent\s*=[^=]")
+        self.assertIn("days > 8", script)
 
     def test_best_right_now_skips_variants_and_shows_end_date_and_badge(self):
         listed = [row("SPAR", 52.27, note=VARIANTS_NOTE),

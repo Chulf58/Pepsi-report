@@ -147,6 +147,7 @@ footer { margin-top:28px; color:var(--muted); font-size:.8rem; text-align:center
 
 # Upgrades the pill when the page itself has gone stale: the run date is fixed in the file,
 # so a phone opening an old page (the PC was off, a push failed) still sees the warning.
+# It adds to the text, so a source-error or stale warning already there stays.
 AGE_JS = """
 (function () {
   var p = document.getElementById('fresh');
@@ -154,7 +155,7 @@ AGE_JS = """
   var days = Math.floor((Date.now() - new Date(p.dataset.run + 'T00:00:00').getTime()) / 86400000);
   if (days > %d) {
     p.className = 'pill stale';
-    p.textContent = 'This page is ' + days + ' days old: the weekly run looks overdue';
+    p.textContent += '; this page is ' + days + ' days old: the weekly run looks overdue';
   }
 })();
 """ % STALE_DAYS
@@ -184,15 +185,21 @@ def _css_class(product):
 
 
 def freshness(errors, extras, today):
-    """(pill class, text): fresh, warn for source errors, stale when over 8 days or never collected."""
+    """(pill class, text): stale when over 8 days old or never collected, warn for source errors
+    alone, else fresh. Stale data with source errors names both."""
     days = age_days(extras, today)
+    parts = []
     if days is None:
-        return "stale", "No successful collection on record"
-    if days > STALE_DAYS:
-        return "stale", "Stale: the last successful collection is %d days old" % days
+        parts.append("No successful collection on record")
+    elif days > STALE_DAYS:
+        parts.append("Stale: the last successful collection is %d days old" % days)
+    stale = bool(parts)
     if errors:
-        return "warn", "Source errors: some prices may be missing"
-    return "fresh", "Up to date" if days == 0 else "Collected %d day%s ago" % (days, "" if days == 1 else "s")
+        parts.append("Source errors: some prices may be missing")
+    if parts:
+        return "stale" if stale else "warn", "; ".join(parts)
+    # A date, not "today": the page keeps this text however long it stays up.
+    return "fresh", "Fresh: collected %s" % _short(extras.last_success)
 
 
 def _badge(flag):

@@ -77,11 +77,12 @@ is listed under source errors and sets exit status 2; the rest of the run carrie
 
 ## Weekly run on this PC
 
-A Windows scheduled task runs the finder every Monday at 07:00 (local time), commits
-`data/history.csv` to `main`, pushes it, and shows the Windows notification "Pepsi prices
-updated". Clicking it opens `out\report.html`. It runs only while the PC is on and you are
-logged in; if the PC was off at 07:00, the run starts at the next login or wake. Nothing
-is published anywhere else.
+A Windows scheduled task runs the finder every Monday at 07:00 (local time), commits the
+price history, `REPORT.md` and the phone page to `main`, pushes them, and shows the
+Windows notification "Pepsi prices updated". Clicking it opens `out\report.html`. It runs
+only while the PC is on and you are logged in; if the PC was off at 07:00, the run starts
+at the next login or wake. GitHub Pages publishes the pushed `docs/` folder at
+https://chulf58.github.io/Pepsi-report/; nothing is published anywhere else.
 
 The pieces are in `scripts/`:
 
@@ -91,18 +92,20 @@ The pieces are in `scripts/`:
   reported, never stacked on; push it or reset it by hand. It then runs
   `python3 -m dealfinder`. The output must hold exactly one valid "Offers kept:" line and
   one "Source errors:" line, otherwise nothing is committed. When the exit status is 0 or
-  2 and `data/history.csv` changed, it commits only that file as "Weekly prices
-  YYYY-MM-DD" (those two lines go in the body). Before each push it checks that
-  `origin/main..HEAD` is exactly that one commit and touches only `data/history.csv`,
-  then pushes `origin main`. A rejected push is retried once after `git pull --rebase`.
+  2, it commits the files that changed out of these seven, and no others: `data/history.csv`,
+  `REPORT.md`, `data/last_success.txt`, `docs/index.html`, `docs/manifest.webmanifest`,
+  `docs/icon.svg` and `docs/.nojekyll`. Files from that list that are not tracked yet are
+  added on the first run that writes them. The commit is "Weekly prices YYYY-MM-DD"
+  (those two lines go in the body). Before each push it checks that `origin/main..HEAD` is
+  exactly that one commit and touches only those seven files, then pushes `origin main`. A rejected push is retried once after `git pull --rebase`.
   If that rebase fails and cannot be aborted, a separate notification says manual
   recovery is needed. It never force-pushes. If the finder crashes, or any other tracked
   file is changed or staged, nothing is committed. The output goes to `out/last-run.log`.
   A failed start-up (bad repository path, log file that cannot be opened) still shows
   the notification, and the reason goes to stderr. The script exits 0 on OK, 2 when the
   finder reported source errors (the history is still committed), and 1 on any failure.
-  A crash that leaves `data/history.csv` modified makes the next run refuse until you
-  restore it with `git restore data/history.csv`.
+  A crash that leaves any of the generated files modified makes the next run refuse until
+  you restore them with `git restore data/history.csv REPORT.md data/last_success.txt docs/`.
 - `notify.ps1` shows the notification with built-in Windows PowerShell 5.1 APIs. If the
   toast fails it falls back to a balloon tip, then to `msg.exe`, and logs which one it
   used. Call it with the status text as `-Status` (`-Message` is an alias, and the text
