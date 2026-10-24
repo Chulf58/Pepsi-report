@@ -10,7 +10,7 @@ from contextlib import redirect_stdout
 from datetime import date
 
 from dealfinder.cli import main
-from dealfinder.history import HEADER, load_history
+from dealfinder.history import HEADER, Observation, load_history
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures", "sample")
 
@@ -181,6 +181,45 @@ class OfflineRunTest(unittest.TestCase):
         self.assertIn("Bottles dropped: 1", summary)
         # Same offers from three search centres are kept once.
         self.assertEqual(len(load_history(self.history)), 3)
+
+    def test_same_offer_under_two_tjek_ids_is_listed_and_stored_once(self):
+        short = "24 x 33 cl. Literpris 9,47 + pant."
+        long_ = "Sælges i hele forpakninger. 24 x 33 cl. Literpris 9,47 + pant. Max. 3 pakker"
+        rows = [tjek("one", "Faxe Kondi eller Pepsi Max", short, 75.0, store="365discount"),
+                tjek("two", "Faxe Kondi eller Pepsi Max", long_, 75.0, store="365discount"),
+                # Same store and price but another end date: a different offer, kept.
+                tjek("three", "Pepsi Max", short, 75.0, store="365discount",
+                     run_till="2026-10-30T22:59:59+0000"),
+                tjek("v1", "Pepsi eller Faxe Kondi", "Flere varianter. 24 x 33 cl ds", 52.27, store="SPAR"),
+                tjek("v2", "Pepsi eller Faxe Kondi", "Flere varianter. 24 x 33 cl dåse", 52.27, store="SPAR")]
+        code, summary = self.run_cli("2026-10-23", self.fixture(rows))
+        self.assertEqual(code, 0, summary)
+        stored = load_history(self.history)
+        self.assertEqual(sorted(r["source_id"] for r in stored), ["three", "two"])
+        kept = next(r for r in stored if r["source_id"] == "two")
+        self.assertTrue(kept["description"].endswith(long_), kept["description"])
+        listed = [r for r in self.report_rows() if r["status"] == "offer"]
+        self.assertEqual(sorted((r["store"], r["valid_to"]) for r in listed),
+                         [("365discount", "2026-10-29"), ("365discount", "2026-10-30"),
+                          ("SPAR", "2026-10-29")])
+        self.assertIn("Duplicate offers merged: 2", summary)
+
+    def test_merge_duplicates_keeps_the_longer_description_or_the_first(self):
+        from dealfinder.pipeline import merge_duplicates
+
+        def obs(sid, desc, store="Netto", price=75.0, volume=7.92, to="2026-10-28", source="tjek"):
+            return Observation(run_id="r", run_date="2026-10-24", product="Pepsi Max", source=source,
+                               source_id=sid, product_id=sid, store=store, description=desc,
+                               pack="24 x 0.33 L cans", volume_l=volume, price_dkk=price,
+                               kr_per_l=round(price / volume, 2), valid_from="2026-10-22",
+                               valid_to=to, campaign=True, url="")
+        rows = [obs("a", "same"), obs("b", "same"), obs("c", "x"), obs("d", "longest text", store="Bilka"),
+                obs("e", "short", store="Bilka"), obs("f", "x", price=80.0), obs("g", "x", volume=1.98),
+                obs("h", "x", to="2026-10-29"), obs("i", "x", source="rema")]
+        kept, merged = merge_duplicates(rows)
+        self.assertEqual([o.source_id for o in kept], ["a", "d", "f", "g", "h", "i"])
+        self.assertEqual(merged, 3)
+        self.assertEqual(merge_duplicates([]), ([], 0))
 
     def test_percent_vs_12_week_average(self):
         # Four prior weeks, mean 10.0 kr/L, low 9.0.

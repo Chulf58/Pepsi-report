@@ -55,6 +55,8 @@ class Outcome:
     # Counts from the next-week nemlig pass (rejected, expired, bottles, ...), kept apart
     # from the main counters so the same product is not counted twice.
     next_week: Counter = field(default_factory=Counter)
+    # Rows dropped by merge_duplicates across observations, variants and upcoming.
+    duplicates_merged: int = 0
 
     def drop_bottle(self, store):
         self.bottles_dropped += 1
@@ -429,6 +431,23 @@ def slot_date(slot):
     return "%s-%s-%s" % (slot[:4], slot[4:6], slot[6:8])
 
 
+def merge_duplicates(observations):
+    """(rows, number merged): one row per source, store, product, volume, price and valid dates.
+
+    A shop can publish the same offer twice under different ids and texts (Tjek does this),
+    which would list, flag and store it twice. The row with the longest description is kept,
+    the first one on a tie, at the position of the first row of its group.
+    """
+    groups = {}
+    for o in observations:
+        key = (o.source, o.store, o.product, round(o.volume_l, 4), o.price_dkk, o.valid_from, o.valid_to)
+        best = groups.get(key)
+        if best is None or len(o.description) > len(best.description):
+            groups[key] = o  # a replaced key keeps its place in the dict
+    kept = list(groups.values())
+    return kept, len(observations) - len(kept)
+
+
 def build(tjek_offers, rema_products, today, run_id, nemlig_products=(), known=None,
           nemlig_slot="", nemlig_next=(), nemlig_next_slot=""):
     outcome = Outcome(known=known or {})
@@ -460,8 +479,10 @@ def build(tjek_offers, rema_products, today, run_id, nemlig_products=(), known=N
             {"rejected": sum(scratch.rejected.values()), "unrelated": scratch.unrelated,
              "expired": scratch.expired, "bottles dropped": scratch.bottles_dropped,
              "out of stock": scratch.out_of_stock})
-    outcome.observations = dedupe(outcome.observations)
-    outcome.variants = dedupe(outcome.variants)
+    outcome.observations, merged_now = merge_duplicates(dedupe(outcome.observations))
+    outcome.variants, merged_variants = merge_duplicates(dedupe(outcome.variants))
+    outcome.upcoming, merged_upcoming = merge_duplicates(outcome.upcoming)
+    outcome.duplicates_merged = merged_now + merged_variants + merged_upcoming
     seen, unique = set(), []
     for q in outcome.quarantined:
         if (q.source, q.source_id) not in seen:
