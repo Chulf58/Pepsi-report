@@ -14,7 +14,7 @@ SCRIPT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))
                       "scripts", "weekly-run.sh")
 
 FAKE_FINDER = r"""#!/usr/bin/env bash
-# FAKE_MODE: report_only | nonote | badnote | longnote | dupe_note | append | errors | crash | unchanged | touch_other | race | conflict | noparse | dupe | extra_commit
+# FAKE_MODE: report_only | touch_docs_other | nonote | badnote | longnote | dupe_note | append | errors | crash | unchanged | touch_other | race | conflict | noparse | dupe | extra_commit
 case "$FAKE_MODE" in
   race|conflict)
     # Another machine pushes to origin after our pull and before our push.
@@ -33,7 +33,7 @@ case "$FAKE_MODE" in
     echo "extra" >> other.txt && git commit -q -am "stray commit"
     echo "2026-10-26,new row" >> data/history.csv
     ;;
-  append|race|conflict|noparse|dupe|touch_other|nonote|badnote|longnote|dupe_note) echo "2026-10-26,new row" >> data/history.csv ;;
+  append|race|conflict|noparse|dupe|touch_other|touch_docs_other|nonote|badnote|longnote|dupe_note) echo "2026-10-26,new row" >> data/history.csv ;;
   report_only) ;;
   errors) echo "2026-10-26,new row" >> data/history.csv ;;
   crash) echo "half written" >> data/history.csv ;;
@@ -42,9 +42,16 @@ esac
 case "$FAKE_MODE" in
   unchanged|crash) ;;
   report_only) echo "report for $FAKE_MODE" > REPORT.md ;;
-  *) echo "report for $FAKE_MODE" > REPORT.md; echo "2026-10-26" > data/last_success.txt ;;
+  *) echo "report for $FAKE_MODE" > REPORT.md; echo "2026-10-26" > data/last_success.txt
+     # The phone page changes every run; the manifest, icon and .nojekyll are rewritten unchanged.
+     mkdir -p docs
+     echo "page for $FAKE_MODE" > docs/index.html
+     echo '{"name": "t"}' > docs/manifest.webmanifest
+     echo "<svg/>" > docs/icon.svg
+     : > docs/.nojekyll ;;
 esac
 [ "$FAKE_MODE" = touch_other ] && echo "changed" >> other.txt
+[ "$FAKE_MODE" = touch_docs_other ] && echo "changed" >> docs/old.html
 [ "$FAKE_MODE" = noparse ] && exit 0
 echo "Offers kept: Pepsi Max: 3, Cult Energy: 2"
 case "$FAKE_MODE" in
@@ -94,6 +101,11 @@ class WeeklyRunTest(unittest.TestCase):
         self._put("other.txt", "keep\n")
         self._put("REPORT.md", "old report\n")
         self._put("data/last_success.txt", "2026-10-01\n")
+        os.makedirs(os.path.join(self.repo, "docs"))
+        self._put("docs/index.html", "old page\n")
+        self._put("docs/manifest.webmanifest", '{"name": "t"}\n')
+        self._put("docs/icon.svg", "<svg/>\n")
+        self._put("docs/.nojekyll", "")
         self.git(self.repo, "add", "-A")
         self.git(self.repo, "commit", "-q", "-m", "initial")
         self.git(self.repo, "push", "-q", "origin", "main")
@@ -130,8 +142,9 @@ class WeeklyRunTest(unittest.TestCase):
         self._put("scratch.txt", "untracked\n")
         done = self.run_script("append")
         self.assertEqual(done.returncode, 0, done.stderr)
+        # The unchanged manifest, icon and .nojekyll are not part of the commit.
         self.assertEqual(self.git(self.repo, "show", "--name-only", "--format=", "HEAD"),
-                         "REPORT.md\ndata/history.csv\ndata/last_success.txt")
+                         "REPORT.md\ndata/history.csv\ndata/last_success.txt\ndocs/index.html")
         self.assertEqual(self.git(self.repo, "rev-parse", "HEAD~1"), self.base)
         subject = self.git(self.repo, "log", "-1", "--format=%s")
         self.assertRegex(subject, r"^Weekly prices \d{4}-\d{2}-\d{2}$")
@@ -161,7 +174,34 @@ class WeeklyRunTest(unittest.TestCase):
         done = self.run_script("append")
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(self.git(self.repo, "show", "--name-only", "--format=", "HEAD"),
-                         "REPORT.md\ndata/history.csv\ndata/last_success.txt")
+                         "REPORT.md\ndata/history.csv\ndata/last_success.txt\ndocs/index.html")
+
+    def test_first_run_stages_the_untracked_docs_page_files(self):
+        self.git(self.repo, "rm", "-q", "-r", "docs")
+        self.git(self.repo, "commit", "-q", "-m", "no phone page yet")
+        self.git(self.repo, "push", "-q", "origin", "main")
+        # A stray untracked file in docs/ is not one of the four and must stay out.
+        os.makedirs(os.path.join(self.repo, "docs"))
+        self._put("docs/notes.txt", "mine\n")
+        done = self.run_script("append")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(self.git(self.repo, "show", "--name-only", "--format=", "HEAD"),
+                         "REPORT.md\ndata/history.csv\ndata/last_success.txt\ndocs/.nojekyll\n"
+                         "docs/icon.svg\ndocs/index.html\ndocs/manifest.webmanifest")
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.head())
+        self.assertIn("?? docs/notes.txt", self.git(self.repo, "status", "--porcelain").splitlines())
+
+    def test_another_tracked_docs_file_is_refused(self):
+        self._put("docs/old.html", "old\n")
+        self.git(self.repo, "add", "docs/old.html")
+        self.git(self.repo, "commit", "-q", "-m", "another page")
+        self.git(self.repo, "push", "-q", "origin", "main")
+        base = self.head()
+        done = self.run_script("touch_docs_other")
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(self.head(), base)
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), base)
+        self.assertIn("other tracked changes", self.notifications()[0])
 
     def test_notification_names_the_good_offers(self):
         note = "2 good offers: 365discount 9.47, Løvbjerg 10.10"

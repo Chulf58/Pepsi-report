@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # Weekly price run for this PC (ruling weekly-price-run-on-this-pc-commits-history-csv).
 #
-# Pulls main, runs the deal finder, commits ONLY data/history.csv, REPORT.md and data/last_success.txt (rulings
-# weekly-price-run-on-this-pc-commits-history-csv and phone-report-md-committed-to-public-repo),
+# Pulls main, runs the deal finder, commits ONLY data/history.csv, REPORT.md, data/last_success.txt
+# and the phone page files docs/index.html, docs/manifest.webmanifest, docs/icon.svg and
+# docs/.nojekyll (rulings weekly-price-run-on-this-pc-commits-history-csv,
+# phone-report-md-committed-to-public-repo and phone-report-github-pages-mobile-web-app),
 # pushes to main (never forced) and shows a Windows notification. Everything is logged to
 # out/last-run.log. Exit status: 0 OK, 2 the finder reported source errors (history was
 # still committed), 1 anything else (nothing is committed on a crash or a refusal).
 #
 # Safety rules: local main must equal origin/main before the run (a commit left local by
 # an earlier failed push is reported, never stacked on), and the outgoing range
-# origin/main..HEAD must be exactly one commit that changes only data/history.csv,
-# REPORT.md and data/last_success.txt.
+# origin/main..HEAD must be exactly one commit that changes only those allowed files.
 # Every failure, including a failed start-up, ends in a notification.
 #
 # Overrides, used by tests/test_weekly_run.py:
@@ -29,7 +30,12 @@ ORIGIN_REF="refs/remotes/origin/$BRANCH"
 HISTORY=data/history.csv
 REPORT=REPORT.md
 LAST_SUCCESS=data/last_success.txt
-FILES_TEXT="$HISTORY, $REPORT and $LAST_SUCCESS"
+PAGE=docs/index.html
+MANIFEST=docs/manifest.webmanifest
+ICON=docs/icon.svg
+NOJEKYLL=docs/.nojekyll
+ALLOWED=("$HISTORY" "$REPORT" "$LAST_SUCCESS" "$PAGE" "$MANIFEST" "$ICON" "$NOJEKYLL")
+FILES_TEXT="$HISTORY, $REPORT, $LAST_SUCCESS, $PAGE, $MANIFEST, $ICON and $NOJEKYLL"
 LOG="$REPO/out/last-run.log"
 FINDER_OUT="$LOG.finder"
 LOG_OK=0   # set once the log file is open; until then messages go to stderr only
@@ -83,19 +89,19 @@ rebase_in_progress() {
     [ -d "$(git rev-parse --git-path rebase-merge)" ] || [ -d "$(git rev-parse --git-path rebase-apply)" ]
 }
 
-# Reads file names on stdin; succeeds when there is at least one and each is one of the three allowed files.
+# Reads file names on stdin; succeeds when there is at least one and each is one of the allowed files.
 only_allowed_files() {
     local f seen=0
     while IFS= read -r f; do
         case "$f" in
-            "$HISTORY"|"$REPORT"|"$LAST_SUCCESS") seen=1 ;;
+            "$HISTORY"|"$REPORT"|"$LAST_SUCCESS"|"$PAGE"|"$MANIFEST"|"$ICON"|"$NOJEKYLL") seen=1 ;;
             *) return 1 ;;
         esac
     done
     [ "$seen" = 1 ]
 }
 
-# Exactly one commit may leave this machine, and it may change only the three allowed files.
+# Exactly one commit may leave this machine, and it may change only the allowed files.
 check_outgoing() {
     local count
     count="$(git rev-list --count "$ORIGIN_REF..HEAD")" || return 1
@@ -169,19 +175,20 @@ if [ -n "$note" ]; then
 fi
 title="Pepsi prices updated"
 
-# Only the three allowed files may have changed.
+# Only the allowed files may have changed.
 others="$(git status --porcelain --untracked-files=no 2>/dev/null \
     | grep -v -x " M $HISTORY" | grep -v -x " M $REPORT" | grep -v -x " M $LAST_SUCCESS" \
-    || true)"
+    | grep -v -x " M $PAGE" | grep -v -x " M $MANIFEST" | grep -v -x " M $ICON" \
+    | grep -v -x " M $NOJEKYLL" || true)"
 if [ -n "$others" ]; then
     log "$others"
     fail "the finder left other tracked changes, nothing committed"
 fi
 
-# Stage each of the allowed files that changed; REPORT.md and the last-success file are
-# untracked on the very first run.
+# Stage each of the allowed files that changed; REPORT.md, the last-success file and the
+# docs/ page files are untracked on the very first run that writes them.
 staged_any=0
-for f in "$HISTORY" "$REPORT" "$LAST_SUCCESS"; do
+for f in "${ALLOWED[@]}"; do
     if [ -n "$(git status --porcelain -- "$f")" ]; then
         git add -- "$f" >> "$LOG" 2>&1 || fail "git add failed"
         staged_any=1
