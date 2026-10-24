@@ -20,8 +20,9 @@ table) and `out/report.csv`. It prints a summary with offers per product, quaran
 rejected rows, excluded dealers, request counts and source errors. The exit status is 2
 when a source failed; the report then lists the error at the top. `REPORT.md` and
 `out/report.html` open with a short prose summary of the result, written from fixed templates.
+A live run also writes the phone page `docs/index.html`, which GitHub Pages serves at https://chulf58.github.io/Pepsi-report/.
 
-Other options: `--history PATH`, `--out DIR`, `--products PATH`, `--today YYYY-MM-DD`.
+Other options: `--history PATH`, `--out DIR`, `--products PATH`, `--mobile-dir PATH`, `--today YYYY-MM-DD`.
 
 ## Product ids
 

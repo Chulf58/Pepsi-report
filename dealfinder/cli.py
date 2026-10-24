@@ -10,6 +10,7 @@ from .flags import flag_reason, flagged_offers, load_limits, toast_text
 from .history import (NOT_ENOUGH, append_history, baseline, load_history, lowest_seen_text,
                       percent_vs, week_labels, weekly_lows)
 from .match import CULT, PEPSI_MAX, VARIANTS_NOTE, load_known_ids
+from .mobile import write_mobile
 from .parse import TZ_NOTE, copenhagen_date
 from .pipeline import UPCOMING_NOTE, build
 from .report import NOT_SEEN, Extras, age_lines, coverage_rows, write_reports
@@ -34,6 +35,9 @@ def parse_args(argv):
     p.add_argument("--last-success", metavar="PATH",
                    help="file holding the date of the last run without source errors (default: "
                         "data/last_success.txt; none with --offline)")
+    p.add_argument("--mobile-dir", metavar="PATH",
+                   help="where to write the phone page index.html with its manifest and icon "
+                        "(default: docs/ at the repo root; none with --offline)")
     p.add_argument("--today", type=date.fromisoformat,
                    help="run date YYYY-MM-DD (default: today in Denmark)")
     args = p.parse_args(argv)
@@ -42,6 +46,8 @@ def parse_args(argv):
             args.report_md = os.path.join(ROOT, "REPORT.md")
         if args.last_success is None:
             args.last_success = os.path.join(ROOT, "data", "last_success.txt")
+        if args.mobile_dir is None:
+            args.mobile_dir = os.path.join(ROOT, "docs")
     return args
 
 
@@ -152,9 +158,13 @@ def main(argv=None):
                                         errors, lines, outcome.text_matched,
                                         today=today, extras=extras,
                                         report_md=args.report_md)
+    mobile_path = (write_mobile(args.mobile_dir, run_id, listed, outcome.quarantined, errors, today, extras)
+                   if args.mobile_dir else None)
     print("Deal finder run %s%s" % (run_id, " (offline)" if args.offline else ""))
     for line in lines:
         print(line)
     print("History: appended %d rows to %s" % (len(outcome.observations), args.history))
     print("Report: %s, %s" % (html_path, csv_path))
+    if mobile_path:
+        print("Phone page: %s" % mobile_path)
     return EXIT_SOURCE_ERROR if errors else 0

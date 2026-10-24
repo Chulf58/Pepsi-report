@@ -157,11 +157,16 @@ def write_csv(path, rows):
                         for row in rows)
 
 
+def is_web_url(url):
+    """True for an http(s) URL, the only kind the reports turn into a link."""
+    return url.lower().startswith(("http://", "https://"))
+
+
 def link_html(url):
     """An anchor for an http(s) URL; anything else is shown as escaped text."""
     if not url:
         return ""
-    if url.lower().startswith(("http://", "https://")):
+    if is_web_url(url):
         return '<a href="%s" rel="noopener">link</a>' % escape(url)
     return escape(url)
 
