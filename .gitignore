@@ -12,3 +12,7 @@ claude-code.sh
 opencode.sh
 sterling-update.bat
 .claude/agents/
+
+# deal finder report output
+out/
+__pycache__/

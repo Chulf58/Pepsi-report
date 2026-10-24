@@ -1,0 +1,23 @@
+{
+ "Id": "5061661",
+ "Name": "Pepsi Max (dåse)",
+ "Brand": "Pepsi",
+ "Description": "6 x 0,33 l / ex. pant / Bedst før: 31-03-2023",
+ "Price": 35.7,
+ "UnitPrice": "5,95 kr./Stk.",
+ "UnitPriceCalc": 5.95,
+ "UnitPriceLabel": "kr./Stk.",
+ "DiscountItem": false,
+ "Labels": [
+  "Sukkerfri"
+ ],
+ "Campaign": null,
+ "Availability": {
+  "IsDeliveryAvailable": true,
+  "IsAvailableInStock": false,
+  "ReasonMessageKeys": []
+ },
+ "Url": "pepsi-max-daase-5061661",
+ "Category": "Drikke",
+ "SubCategory": "Cola"
+}

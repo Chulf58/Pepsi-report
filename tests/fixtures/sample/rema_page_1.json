@@ -1,0 +1,136 @@
+{
+ "data": [
+  {
+   "id": 100021,
+   "name": "KIRSEBÆRSAUCE",
+   "underline": "530 GR. / KLASSISK",
+   "description": null,
+   "prices": [
+    {
+     "price": 31.95,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2026-09-17T00:00:00+00:00",
+     "ending_at": "2026-10-31T00:00:00+00:00",
+     "deposit": null,
+     "compare_unit": "kg",
+     "compare_unit_price": 60.28
+    }
+   ]
+  },
+  {
+   "id": 100028,
+   "name": "RIS CUISINE",
+   "underline": "200 ML. / PLANTEKØKKENET",
+   "description": "Økologisk vegetabilsk alternativ til fløde. Baseret på solsikke og ris.<br />",
+   "prices": [
+    {
+     "price": 6.95,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2026-05-21T00:00:00+00:00",
+     "ending_at": "2026-11-21T00:00:00+00:00",
+     "deposit": null,
+     "compare_unit": "ltr",
+     "compare_unit_price": 34.75
+    }
+   ]
+  },
+  {
+   "id": 100042,
+   "name": "KIKÆRTER",
+   "underline": "240 GR. / REMA 1000 ØKOLOGISKE",
+   "description": null,
+   "prices": [
+    {
+     "price": 7.86,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2025-10-09T00:00:00+00:00",
+     "ending_at": "2026-11-21T00:00:00+00:00",
+     "deposit": null,
+     "compare_unit": "kg",
+     "compare_unit_price": 32.75
+    }
+   ]
+  },
+  {
+   "id": 22006,
+   "name": "A38 NATUREL 0,4%",
+   "underline": "1 KG. / ARLA CULTURA, ØKOLOGISK",
+   "description": "Arla A38® naturel 1,5% har en let, cremet konsistens med en blank overflade. Sma",
+   "prices": [
+    {
+     "price": 15,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": true,
+     "is_campaign": true,
+     "starting_at": "2026-10-18T00:00:00+00:00",
+     "ending_at": "2026-10-24T00:00:00+00:00",
+     "deposit": null,
+     "compare_unit": "kg",
+     "compare_unit_price": 15
+    },
+    {
+     "price": 20.15,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2026-10-25T00:00:00+00:00",
+     "ending_at": "2099-12-31T00:00:00+00:00",
+     "deposit": null,
+     "compare_unit": "kg",
+     "compare_unit_price": 20.15
+    }
+   ]
+  },
+  {
+   "id": 22015,
+   "name": "A38 HINDBÆR 0,4%",
+   "underline": "1 KG. / ARLA CULTURA",
+   "description": "Arla A38® Mild hindbær har den karakteristiske A38® smag, men med et strejf af f",
+   "prices": [
+    {
+     "price": 15,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": true,
+     "is_campaign": true,
+     "starting_at": "2026-10-18T00:00:00+00:00",
+     "ending_at": "2026-10-24T00:00:00+00:00",
+     "deposit": null,
+     "compare_unit": "kg",
+     "compare_unit_price": 15
+    },
+    {
+     "price": 20.15,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2026-10-25T00:00:00+00:00",
+     "ending_at": "2099-12-31T00:00:00+00:00",
+     "deposit": null,
+     "compare_unit": "kg",
+     "compare_unit_price": 20.15
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "current_page": 1,
+   "last_page": 2,
+   "per_page": 1000,
+   "total": 10
+  }
+ }
+}

@@ -1,0 +1,1190 @@
+[
+ {
+  "id": "_81rRrIFKnSXMxWSlq91I",
+  "heading": "Pepsi Max Pet",
+  "description": "24 x 33 CL\nB:2122708",
+  "pricing": {
+   "price": 59.95,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 33,
+    "to": 33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-29T22:00:00+0000",
+  "run_till": "2026-11-03T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.bordershop.com/dk/sogning?term=2122708"
+  },
+  "dealer_id": "3d4dc",
+  "dealer": {
+   "id": "3d4dc",
+   "name": "BorderShop",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.bordershop.com/dk"
+  },
+  "catalog_id": "qLot6tTW"
+ },
+ {
+  "id": "FOvNNQNE2mhNEiJeoK5n3",
+  "heading": "PEPSI MAX",
+  "description": "GRÆNSENS BILLIGSTE!\nPET\n6 x 1,5 l (9 l)\n1 l = 5,33 DKK | 0,71 €",
+  "pricing": {
+   "price": 48,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 6,
+    "to": 6,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "a68bpg",
+  "dealer": {
+   "id": "a68bpg",
+   "name": "Nielsen Scan-Shop",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://nielsen.discount/"
+  },
+  "catalog_id": "yMKwIsAJ"
+ },
+ {
+  "id": "QfbAp2Cevr2LRBrILQwaW",
+  "heading": "Pepsi Max PET",
+  "description": "24 x 0,33 l. | Pr. ks. | 24 x 0,33 l.  | Spar 34% ift. DK* |  Flere varianter.  Pr. liter 7,95. Ingen pant. | 24 stk.",
+  "pricing": {
+   "price": 62.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-20T22:00:00+0000",
+  "run_till": "2026-11-03T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "44d0Q",
+  "dealer": {
+   "id": "44d0Q",
+   "name": "Calle",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.calle.dk/da-dk"
+  },
+  "catalog_id": "ph90GEkC"
+ },
+ {
+  "id": "HxvUbSYwBlbs6EooN-943",
+  "heading": "Pepsi Max eller Faxe Kondi",
+  "description": "33 cl. Ex. pant\nKasse med 24 stk. 84.00/10.61 pr. liter\nVed køb af flere end 72 stk. pr. variant pr. dag er prisen op til 6.89 pr. stk.",
+  "pricing": {
+   "price": 3.5,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 33,
+    "to": 33
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": 72
+   }
+  },
+  "run_from": "2026-10-28T23:00:00+0000",
+  "run_till": "2026-10-31T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "11deC",
+  "dealer": {
+   "id": "11deC",
+   "name": "REMA 1000",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://rema1000.dk/"
+  },
+  "catalog_id": "Rm2KTkTP"
+ },
+ {
+  "id": "rtlSyojQM4cX10F1yMNC3",
+  "heading": "Pepsi Max eller Faxe Kondi",
+  "description": "Ved køb af flere end 6 stk. pr. variant pr. dag er prisen 20.53 pr. stk.\n1.5 liter. Ex. pant\n8.00 pr. liter",
+  "pricing": {
+   "price": 12,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": 6
+   }
+  },
+  "run_from": "2026-10-17T22:00:00+0000",
+  "run_till": "2026-10-24T21:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "11deC",
+  "dealer": {
+   "id": "11deC",
+   "name": "REMA 1000",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://rema1000.dk/"
+  },
+  "catalog_id": "2owlMUb9"
+ },
+ {
+  "id": "p6TyIgLlgigZ-hH8oLXtx",
+  "heading": "PEPSI ELLER FAXE KONDI",
+  "description": "Flere varianter. 1,5 liter. Literpris 6,63. Max. 4 flasker pr. kunde pr. dag. Herefter er prisen op til 21,50 + pant pr. flaske.",
+  "pricing": {
+   "price": 9.95,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": 4
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "267e1m",
+  "dealer": {
+   "id": "267e1m",
+   "name": "MENY",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://meny.dk"
+  },
+  "catalog_id": "7HeFyouf"
+ },
+ {
+  "id": "jLJjVtRTbqnyHOo96s0Ac",
+  "heading": "Pepsi eller Faxe Kondi",
+  "description": "Flere varianter. 1,5 liter. Literpris 6,67. Max. 4 flasker pr. kunde pr. dag. Herefter er prisen 21,50 + pant pr. flaske. MAX. 4 FLASKER SKARP PRIS + pant PR. FLASKE",
+  "pricing": {
+   "price": 10,
+   "pre_price": 21.5,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": 4
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "88ddE",
+  "dealer": {
+   "id": "88ddE",
+   "name": "SPAR",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://spar.dk/"
+  },
+  "catalog_id": "R8i4BrYB"
+ },
+ {
+  "id": "wBQRG7CcwItfMZsh4QhkG",
+  "heading": "Pepsi Max el. Faxe Kondi sodavand",
+  "description": "33 cl/24 ds\nPr ltr 10,10\nExcl pant",
+  "pricing": {
+   "price": 79.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 792,
+    "to": 792
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "65caN",
+  "dealer": {
+   "id": "65caN",
+   "name": "Løvbjerg",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://www.lovbjerg.dk"
+  },
+  "catalog_id": "caROFslb"
+ },
+ {
+  "id": "y8pzcClyAJkQn0N8Oa1P2",
+  "heading": "Faxe Kondi eller Pepsi Max*",
+  "description": "24 x 33 cl. Literpris 9,47 + pant. \n1 pakke",
+  "pricing": {
+   "price": 75,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 33,
+    "to": 33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-21T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "DWZE1w",
+  "dealer": {
+   "id": "DWZE1w",
+   "name": "365discount",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://365discount.coop.dk"
+  },
+  "catalog_id": "c_Uap4qx"
+ },
+ {
+  "id": "unUPnE8j6GbBdWsY7Eak6",
+  "heading": "Pepsi Max, Faxe Kondi, Royal øl, Anarkist el. Booster",
+  "description": "Udvalgte varianter\n33 cl/6/20 ds\nel. 50 cl/8 ds\nPr ltr max  40,40",
+  "pricing": {
+   "price": 79.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 198,
+    "to": 660
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "65caN",
+  "dealer": {
+   "id": "65caN",
+   "name": "Løvbjerg",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://www.lovbjerg.dk"
+  },
+  "catalog_id": "OePG_nQ4"
+ },
+ {
+  "id": "rAjR475Uet3-ea7l7Gm2s",
+  "heading": "Faxe Kondi eller Pepsi Max sodavand",
+  "description": "2 liter. + pant.\nPr. liter 8,00\n2 LITER",
+  "pricing": {
+   "price": 16,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 2,
+    "to": 2
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-23T22:00:00+0000",
+  "run_till": "2026-10-30T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "9ba51",
+  "dealer": {
+   "id": "9ba51",
+   "name": "Netto",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://netto.dk/"
+  },
+  "catalog_id": "A1sAnApB"
+ },
+ {
+  "id": "MsYftoMwYo-e64aGAwYFJ",
+  "heading": "Faxe Kondi eller Pepsi Max",
+  "description": "Flere varianter. 150 cl. Literpris 8,00 + pant. 1 flaske.",
+  "pricing": {
+   "price": 12,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 150,
+    "to": 150
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "0b1e8",
+  "dealer": {
+   "id": "0b1e8",
+   "name": "SuperBrugsen",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://superbrugsen.dk"
+  },
+  "catalog_id": "-9s_UiTD"
+ },
+ {
+  "id": "N9_btfarlp2g7OtRzJHeO",
+  "heading": "Pepsi Max",
+  "description": "Frit valg\nB:2035267",
+  "pricing": {
+   "price": 64.95,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 33,
+    "to": 33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-29T22:00:00+0000",
+  "run_till": "2026-11-03T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.bordershop.com/dk/sogning?term=2035267"
+  },
+  "dealer_id": "3d4dc",
+  "dealer": {
+   "id": "3d4dc",
+   "name": "BorderShop",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.bordershop.com/dk"
+  },
+  "catalog_id": "qLot6tTW"
+ },
+ {
+  "id": "j2xmXrV3mUHjJIH1P3FS1",
+  "heading": "Pepsi, Mirinda el. Mountain Dew",
+  "description": "24 x 0,33 l.",
+  "pricing": {
+   "price": 62.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-20T22:00:00+0000",
+  "run_till": "2026-11-03T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "6e09Z",
+  "dealer": {
+   "id": "6e09Z",
+   "name": "Fleggaard",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://fleggaard.dk/da-dk"
+  },
+  "catalog_id": "9oFt9ctB"
+ },
+ {
+  "id": "YPr3I7ja362geUAXS_LbF",
+  "heading": "Faxe Kondi eller Pepsi Max",
+  "description": "Flere varianter. 150 cl. Literpris 8,00 + pant. 1 flaske",
+  "pricing": {
+   "price": 12,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 150,
+    "to": 150
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "c1edq",
+  "dealer": {
+   "id": "c1edq",
+   "name": "Kvickly",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://kvickly.dk"
+  },
+  "catalog_id": "G5LCf8rw"
+ },
+ {
+  "id": "1EcFFWHyr2rv2GdRqBOgo",
+  "heading": "Pepsi Max, Pepsi, 7 Up Zero Sugar, Mirinda eller Mountain Dew",
+  "description": "Flere varianter, kasse à 24 x 0,33 liter\nLiter = kr. 8,33",
+  "pricing": {
+   "price": 66,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.poetzsch-padborg.dk/soeg?search_query=110034%20110036%20110046%20114550%20131271%20132333%20134359%20135082%20303902%20432599%20448694%20458916%20458917"
+  },
+  "dealer_id": "d238Lg",
+  "dealer": {
+   "id": "d238Lg",
+   "name": "Poetzsch Padborg",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.poetzsch-padborg.dk/"
+  },
+  "catalog_id": "fnw6cH9D"
+ },
+ {
+  "id": "FlzidHRelKl4vylmZjGPz",
+  "heading": "PEPSI / PEPSI MAX",
+  "description": "Flere varianter\n24 x 0,33 l\n1 l = 7,95 DKK / 1,06 €",
+  "pricing": {
+   "price": 63,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "a68bpg",
+  "dealer": {
+   "id": "a68bpg",
+   "name": "Nielsen Scan-Shop",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://nielsen.discount/"
+  },
+  "catalog_id": "yMKwIsAJ"
+ },
+ {
+  "id": "cJSB-k5vV8JpKsByx5Sk0",
+  "heading": "Pepsi Max el. Faxe Kondi",
+  "description": "6 x 1,5 l. Flere varianter. Pr. pk. 53,53. Pr. liter 5,95. Ingen pant. Pr. fl. 8,92 v/ køb af 6 fl.",
+  "pricing": {
+   "price": 8.92,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": 6,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-20T22:00:00+0000",
+  "run_till": "2026-11-03T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "44d0Q",
+  "dealer": {
+   "id": "44d0Q",
+   "name": "Calle",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.calle.dk/da-dk"
+  },
+  "catalog_id": "cJnDJSP3"
+ },
+ {
+  "id": "8qq9vPOtSBjEYwKHUj2LU",
+  "heading": "FAXE KONDI | PEPSI MAX",
+  "description": "Original | 0 kalorier\n6 x 1,5 l (9 l) | PET\n1 l = 5,33 DKK | 0,71 €",
+  "pricing": {
+   "price": 48,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 6,
+    "to": 6,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "a68bpg",
+  "dealer": {
+   "id": "a68bpg",
+   "name": "Nielsen Scan-Shop",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://nielsen.discount/"
+  },
+  "catalog_id": "yMKwIsAJ"
+ },
+ {
+  "id": "IXukzzU452XwOXcmRLKiK",
+  "heading": "Pepsi Max",
+  "description": "Pakke à 6 x 1,5 liter Liter = kr. 5,89",
+  "pricing": {
+   "price": 53,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 6,
+    "to": 6,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.poetzsch-padborg.dk/soeg?search_query=112595"
+  },
+  "dealer_id": "d238Lg",
+  "dealer": {
+   "id": "d238Lg",
+   "name": "Poetzsch Padborg",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.poetzsch-padborg.dk/"
+  },
+  "catalog_id": "fnw6cH9D"
+ },
+ {
+  "id": "RBHNXE8WYqPtGhxHzhtlz",
+  "heading": "Pepsi Max",
+  "description": "Flere varianter Pakke à 24 x 0,33 liter Liter = kr. 7,95",
+  "pricing": {
+   "price": 63,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.poetzsch-padborg.dk/soeg?search_query=133615%20458920%20458921"
+  },
+  "dealer_id": "d238Lg",
+  "dealer": {
+   "id": "d238Lg",
+   "name": "Poetzsch Padborg",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.poetzsch-padborg.dk/"
+  },
+  "catalog_id": "fnw6cH9D"
+ },
+ {
+  "id": "614kjSL8AChe-e69STSCB",
+  "heading": "Pepsi Max PET",
+  "description": "24 x 0,33 l.",
+  "pricing": {
+   "price": 62.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-20T22:00:00+0000",
+  "run_till": "2026-11-03T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "6e09Z",
+  "dealer": {
+   "id": "6e09Z",
+   "name": "Fleggaard",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://fleggaard.dk/da-dk"
+  },
+  "catalog_id": "9oFt9ctB"
+ },
+ {
+  "id": "lBglwnmSXpxXuEqfw1L7E",
+  "heading": "Pepsi, Mirinda el. Mountain Dew",
+  "description": "24 x 0,33 l.  | Pr. ks. | 24 x 0,33 l.   |  Flere varianter.  Pr. liter 7,95. Ingen pant. | 24 stk.",
+  "pricing": {
+   "price": 62.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-20T22:00:00+0000",
+  "run_till": "2026-11-03T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "44d0Q",
+  "dealer": {
+   "id": "44d0Q",
+   "name": "Calle",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.calle.dk/da-dk"
+  },
+  "catalog_id": "ph90GEkC"
+ },
+ {
+  "id": "xrvRjI7xyMFLHnsSosycY",
+  "heading": "Pepsi Max el. Faxe Kondi",
+  "description": "Sælges kun i hele kasser Flere varianter 6 x 1,5 l Literpris 5,55",
+  "pricing": {
+   "price": 8.33,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1.5,
+    "to": 1.5
+   },
+   "pieces": {
+    "from": 6,
+    "to": 6,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-06T22:00:00+0000",
+  "run_till": "2026-10-27T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "1e02AL",
+  "dealer": {
+   "id": "1e02AL",
+   "name": "fakta Tyskland",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://fakta.eu/"
+  },
+  "catalog_id": "HW_qqCIY"
+ },
+ {
+  "id": "CiAtI-5A9gygqGcPyE6_0",
+  "heading": "Pepsi Max PET",
+  "description": "Flere varianter 24 x 0,33 l Literpris 7,95",
+  "pricing": {
+   "price": 62.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 24,
+    "to": 24,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-06T22:00:00+0000",
+  "run_till": "2026-10-27T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "1e02AL",
+  "dealer": {
+   "id": "1e02AL",
+   "name": "fakta Tyskland",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://fakta.eu/"
+  },
+  "catalog_id": "HW_qqCIY"
+ },
+ {
+  "id": "27UcZNq5gwg61g9zR9DPy",
+  "heading": "Øl- eller sodavandsmarked",
+  "description": "18x33 cl. ds. Royal Export, Royal Pilsner, Classic eller Heineken. 24x33 cl. ds. Pepsi Max eller Faxe Kondi. Gælder kun lukkede forpakninger. Ekskl. embl. Pr. liter max. 12.63 MAX. 6 RAMMER TIL DENNE PRIS",
+  "pricing": {
+   "price": 75,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 33,
+    "to": 33
+   },
+   "pieces": {
+    "from": 18,
+    "to": 24,
+    "min": null,
+    "max": 6
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "93f13",
+  "dealer": {
+   "id": "93f13",
+   "name": "Bilka",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://bilka.dk/"
+  },
+  "catalog_id": "6id58iTh"
+ },
+ {
+  "id": "EBjBmEW5083XXtTi9jrDM",
+  "heading": "Sodastream sirup",
+  "description": "Pepsi Max\nFlaske à 440 ml\nLiter = kr. 45,45",
+  "pricing": {
+   "price": 20,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "ml",
+    "si": {
+     "symbol": "l",
+     "factor": 0.001
+    }
+   },
+   "size": {
+    "from": 440,
+    "to": 440
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.poetzsch-padborg.dk/soeg?search_query=128008"
+  },
+  "dealer_id": "d238Lg",
+  "dealer": {
+   "id": "d238Lg",
+   "name": "Poetzsch Padborg",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.poetzsch-padborg.dk/"
+  },
+  "catalog_id": "fnw6cH9D"
+ }
+]
