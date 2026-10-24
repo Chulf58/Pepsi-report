@@ -18,7 +18,8 @@ python3 -m unittest discover -s tests -v       # tests
 A run appends its offers to `data/history.csv` and writes `out/report.html` (sortable
 table) and `out/report.csv`. It prints a summary with offers per product, quarantined and
 rejected rows, excluded dealers, request counts and source errors. The exit status is 2
-when a source failed; the report then lists the error at the top.
+when a source failed; the report then lists the error at the top. `REPORT.md` and
+`out/report.html` open with a short prose summary of the result, written from fixed templates.
 
 Other options: `--history PATH`, `--out DIR`, `--products PATH`, `--today YYYY-MM-DD`.
 
