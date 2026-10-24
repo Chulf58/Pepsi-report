@@ -10,6 +10,7 @@ from datetime import date
 from html import escape
 
 from .match import DANISH_CHAIN_NAMES
+from .summary import summary_text
 
 CSV_HEADER = ["status", "section", "product", "note", "flag", "store", "pack", "price_dkk", "kr_per_l",
               "kr_per_can", "vs_12w_avg", "avg_12w", "low_12w", "valid_from", "valid_to", "campaign",
@@ -64,6 +65,14 @@ def split_listed(listed, today):
     available = sorted((t for t in listed if t[0].valid_from <= now), key=by_price)
     later = sorted((t for t in listed if t[0].valid_from > now), key=by_price)
     return available, later
+
+
+def summary_for(listed, errors, today, extras):
+    """The plain-language summary paragraph for a run (unescaped)."""
+    available, later = split_listed(listed, today)
+    days = age_days(extras, today)
+    return summary_text(available, later, errors, days if days is not None and days > STALE_DAYS else None,
+                        kr_per_can)
 
 
 def coverage_rows(outcome):
@@ -301,7 +310,7 @@ def write_report_md(path, run_id, listed, quarantined, errors, today, extras):
     """REPORT.md: the price list as compact markdown tables, for reading on a phone."""
     available, later = split_listed(listed, today)
     flagged = [(t[0], t[4]) for t in available if t[4]]
-    out = ["# Pepsi Max and Cult Energy prices", "",
+    out = ["# Pepsi Max and Cult Energy prices", "", _md(summary_for(listed, errors, today, extras)), "",
            "Run date: %s. Run id: %s." % (today.isoformat(), run_id),
            "Prices exclude pant; kr/L and kr/can are worked out from them.", ""]
     out += ["- " + line for line in age_lines(extras, today)]
@@ -351,6 +360,7 @@ def write_html(path, run_id, listed, quarantined, errors, summary_lines, text_ma
            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
            "<title>Pepsi Max og Cult priser</title><style>%s</style></head><body>" % STYLE,
            "<h1>Pepsi Max and Cult Energy can prices</h1>",
+           "<p class=\"summary\">%s</p>" % escape(summary_for(listed, errors, today, extras)),
            "<p class=\"muted\">Run %s. Cans only, sorted by kr/L; prices exclude pant. "
            "'vs 12-wk avg' compares with the mean kr/L of the offers seen in the 12 weeks before "
            "this run. Rows marked 'variants, Max likely' "
