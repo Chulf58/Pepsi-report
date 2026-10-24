@@ -174,6 +174,19 @@ class NemligRowTest(unittest.TestCase):
         self.assertEqual(camp.pack, "6 x 0.33 L cans, 2 for 80.00")
         self.assertEqual(out.text_matched, [])
 
+    def test_listed_cult_id_is_kept_as_cult_energy(self):
+        # Synthetic product (nemlig lists no Cult Energy on 2026-10-24): the id, not
+        # the name, decides the product, so a name without the word "Cult" still counts.
+        p = nemlig_product()
+        p.update({"Id": "9990001", "Name": "Energidrik (dåse)",
+                  "Description": "24 x 0,25 l / ex. pant", "Price": 120.0,
+                  "Url": "energidrik-daase-9990001"})
+        out = Outcome(known={"nemlig": {"Cult Energy": {"9990001"}}})
+        normalize_nemlig([p], date(2026, 10, 23), "r1", out)
+        (obs,) = out.observations
+        self.assertEqual((obs.product, obs.source_id, obs.price_dkk), ("Cult Energy", "9990001", 120.0))
+        self.assertEqual(out.text_matched, [])
+
     def test_unclear_campaign_quarantined(self):
         out = self.run_one(nemlig_product({
             "Type": "X", "MinQuantity": 0, "CampaignPrice": 80.0,
