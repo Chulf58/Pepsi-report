@@ -1,6 +1,6 @@
 # Pepsi Max and Cult Energy prices
 
-Run date: 2026-10-24. Run id: 2026-10-24T06:14:32.706173Z.
+Run date: 2026-10-24. Run id: 2026-10-24T06:32:36.585845Z.
 Prices exclude pant; kr/L and kr/can are worked out from them.
 
 - Last successful collection: 2026-10-24 (0 days before this run)
@@ -36,6 +36,7 @@ Prices exclude pant; kr/L and kr/can are worked out from them.
 
 | Product | Store | Pack | kr | kr/L | kr/can | vs avg | From | To | Flag | Slot |
 |---|---|---|--:|--:|--:|--:|---|---|---|---|
+| Pepsi Max (next week, nemlig slot) | nemlig.com | 24 x 0.33 L cans | 82.00 | 10.35 | 3.42 |  | 2026-10-31 | 2026-11-01 |  | 2026103112-120-240, zone 1 |
 | Pepsi Max | REMA 1000 | 0.33 L can | 3.50 | 10.61 | 3.50 |  | 2026-10-29 | 2026-10-31 |  |  |
 | Pepsi Max (next week, nemlig slot) | nemlig.com | 24 x 0.33 L cans | 98.00 | 12.37 | 4.08 |  | 2026-10-31 |  |  | 2026103112-120-240, zone 1 |
 | Pepsi Max (next week, nemlig slot) | nemlig.com | 6 x 0.33 L cans, 2 for 80.00 | 40.00 | 20.20 | 6.67 |  | 2026-10-31 | 2026-11-01 |  | 2026103112-120-240, zone 1 |
@@ -61,7 +62,7 @@ Prices exclude pant; kr/L and kr/can are worked out from them.
 | SPAR | 0 | 0 | 0 | 1 |
 | Min Købmand | not seen this run |
 | Løvbjerg | 1 | 0 | 1 | 0 |
-| nemlig.com | 3 | 0 | 1 | 0 |
+| nemlig.com | 3 | 0 | 0 | 0 |
 | ABC Lavpris | not seen this run |
 | Let-Køb | not seen this run |
 | Coop.dk | not seen this run |
@@ -81,4 +82,4 @@ Prices exclude pant; kr/L and kr/can are worked out from them.
 
 ## Quarantined
 
-2 rows could not be read safely; see out/report.html on the PC.
+1 row could not be read safely; see out/report.html on the PC.
