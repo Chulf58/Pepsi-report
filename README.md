@@ -84,17 +84,29 @@ is published anywhere else.
 The pieces are in `scripts/`:
 
 - `weekly-run.sh` runs in WSL. It checks that no tracked file is modified or staged,
-  checks out `main`, runs `git pull --ff-only`, runs `python3 -m dealfinder`, and, when
-  the exit status is 0 or 2 and `data/history.csv` changed, commits only that file as
-  "Weekly prices YYYY-MM-DD" (the "Offers kept" and "Source errors" lines go in the
-  body) and pushes `origin main`. A rejected push is retried once after
-  `git pull --rebase`. It never force-pushes. If the finder crashes, or any other tracked
+  checks out `main`, fetches, runs `git pull --ff-only`, and requires local `main` to
+  equal `origin/main`. A commit left local by an earlier failed push is therefore
+  reported, never stacked on; push it or reset it by hand. It then runs
+  `python3 -m dealfinder`. The output must hold exactly one valid "Offers kept:" line and
+  one "Source errors:" line, otherwise nothing is committed. When the exit status is 0 or
+  2 and `data/history.csv` changed, it commits only that file as "Weekly prices
+  YYYY-MM-DD" (those two lines go in the body). Before each push it checks that
+  `origin/main..HEAD` is exactly that one commit and touches only `data/history.csv`,
+  then pushes `origin main`. A rejected push is retried once after `git pull --rebase`.
+  If that rebase fails and cannot be aborted, a separate notification says manual
+  recovery is needed. It never force-pushes. If the finder crashes, or any other tracked
   file is changed or staged, nothing is committed. The output goes to `out/last-run.log`.
-  The script exits 0 on OK, 2 when the finder reported source errors (the history is
-  still committed), and 1 on any failure. A crash that leaves `data/history.csv`
-  modified makes the next run refuse until you restore it with `git restore data/history.csv`.
+  A failed start-up (bad repository path, log file that cannot be opened) still shows
+  the notification, and the reason goes to stderr. The script exits 0 on OK, 2 when the
+  finder reported source errors (the history is still committed), and 1 on any failure.
+  A crash that leaves `data/history.csv` modified makes the next run refuse until you
+  restore it with `git restore data/history.csv`.
 - `notify.ps1` shows the notification with built-in Windows PowerShell 5.1 APIs. If the
-  toast fails it falls back to a balloon tip, then to `msg.exe`, and logs which one it used.
+  toast fails it falls back to a balloon tip, then to `msg.exe`, and logs which one it
+  used. Call it with the status text as `-Status` (`-Message` is an alias, and the text
+  also works as the first positional argument); `-Title` and `-ReportPath` are optional:
+  `powershell.exe -File scripts\notify.ps1 -Status "OK, 8 offers"`. It exits non-zero if
+  no notification could be shown.
 - `register-weekly-task.ps1` registers the task "PepsiReport weekly prices".
 
 `git push` uses the GitHub CLI as credential helper (`gh auth git-credential`, set in

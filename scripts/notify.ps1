@@ -3,22 +3,30 @@
   Shows the "Pepsi prices updated" Windows notification; clicking it opens out\report.html.
 
 .DESCRIPTION
+  Call: notify.ps1 [-Status] <text> [-Title <text>] [-ReportPath <path>]. The status text
+  (for example "OK, 8 offers") is the second line of the notification; -Message is an alias
+  for -Status.
+
   Uses only built-in Windows PowerShell 5.1 APIs (Windows.UI.Notifications toast under the
   PowerShell app id). If the toast fails, falls back to a balloon tip and then to msg.exe,
   and says which one was used. Messages go to the console and to out\last-run.log.
 #>
 param(
-    [string]$Message = 'Done',
+    [Parameter(Position = 0)]
+    [Alias('Message')]
+    [string]$Status = 'Done',
     [string]$Title = 'Pepsi prices updated',
-    [string]$ReportPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'out\report.html')
+    [string]$ReportPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $ReportPath) { $ReportPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'out\report.html' }
 $logPath = Join-Path (Split-Path -Parent $ReportPath) 'last-run.log'
 
 function Write-Log([string]$text) {
     Write-Output $text
-    try { Add-Content -LiteralPath $logPath -Value $text -Encoding UTF8 } catch { }
+    try { Add-Content -LiteralPath $logPath -Value $text -Encoding UTF8 }
+    catch { [Console]::Error.WriteLine("notify.ps1: warning: cannot write $logPath ($($_.Exception.Message))") }
 }
 
 function Show-Toast {
@@ -33,7 +41,7 @@ function Show-Toast {
     }
     $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
     $xml.LoadXml(('<toast{0}><visual><binding template="ToastGeneric"><text>{1}</text><text>{2}</text></binding></visual></toast>' -f
-            $launch, [System.Security.SecurityElement]::Escape($Title), [System.Security.SecurityElement]::Escape($Message)))
+            $launch, [System.Security.SecurityElement]::Escape($Title), [System.Security.SecurityElement]::Escape($Status)))
     $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
     [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
 }
@@ -47,14 +55,14 @@ function Show-Balloon {
     if ($opens) {
         Register-ObjectEvent -InputObject $icon -EventName BalloonTipClicked -Action { Start-Process $event.MessageData } -MessageData $ReportPath | Out-Null
     }
-    $icon.ShowBalloonTip(15000, $Title, $Message, [System.Windows.Forms.ToolTipIcon]::Info)
+    $icon.ShowBalloonTip(15000, $Title, $Status, [System.Windows.Forms.ToolTipIcon]::Info)
     Start-Sleep -Seconds 16
     $icon.Dispose()
 }
 
 try {
     Show-Toast
-    Write-Log "notify.ps1: toast shown: $Title - $Message"
+    Write-Log "notify.ps1: toast shown: $Title - $Status"
     exit 0
 } catch {
     Write-Log "notify.ps1: toast failed ($($_.Exception.Message)); falling back to a balloon tip"
@@ -69,7 +77,8 @@ try {
 }
 
 try {
-    & msg.exe $env:USERNAME /TIME:60 "$Title - $Message"
+    & msg.exe $env:USERNAME /TIME:60 "$Title - $Status"
+    if ($LASTEXITCODE -ne 0) { throw "msg.exe exited with code $LASTEXITCODE" }
     Write-Log "notify.ps1: msg.exe message sent (fallback)"
     exit 0
 } catch {

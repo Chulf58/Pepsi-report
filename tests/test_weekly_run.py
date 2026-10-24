@@ -14,24 +14,33 @@ SCRIPT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))
                       "scripts", "weekly-run.sh")
 
 FAKE_FINDER = r"""#!/usr/bin/env bash
-# FAKE_MODE: append | errors | crash | unchanged | touch_other | race
+# FAKE_MODE: append | errors | crash | unchanged | touch_other | race | conflict | noparse | dupe | extra_commit
 case "$FAKE_MODE" in
-  race)
+  race|conflict)
     # Another machine pushes to origin after our pull and before our push.
+    # race changes another file (a clean rebase); conflict changes the same history line.
     other="$(mktemp -d)"
     git clone -q "$ORIGIN" "$other/c"
-    ( cd "$other/c" && echo "remote change" >> other.txt && git add other.txt \
+    if [ "$FAKE_MODE" = conflict ]; then target=data/history.csv; else target=other.txt; fi
+    ( cd "$other/c" && echo "remote change" >> "$target" && git add "$target" \
       && git commit -q -m "remote commit" && git push -q origin main )
     rm -rf "$other"
     ;;
 esac
 case "$FAKE_MODE" in
-  append|race|touch_other) echo "2026-10-26,new row" >> data/history.csv ;;
+  extra_commit)
+    # The finder itself leaves an extra local commit that would ride along with the push.
+    echo "extra" >> other.txt && git commit -q -am "stray commit"
+    echo "2026-10-26,new row" >> data/history.csv
+    ;;
+  append|race|conflict|noparse|dupe|touch_other) echo "2026-10-26,new row" >> data/history.csv ;;
   errors) echo "2026-10-26,new row" >> data/history.csv ;;
   crash) echo "half written" >> data/history.csv ;;
 esac
 [ "$FAKE_MODE" = touch_other ] && echo "changed" >> other.txt
+[ "$FAKE_MODE" = noparse ] && exit 0
 echo "Offers kept: Pepsi Max: 3, Cult Energy: 2"
+[ "$FAKE_MODE" = dupe ] && echo "Offers kept: Pepsi Max: 1, Cult Energy: 1"
 if [ "$FAKE_MODE" = errors ]; then
   echo "Source errors: tjek: boom"
 else
@@ -89,8 +98,8 @@ class WeeklyRunTest(unittest.TestCase):
                               capture_output=True, text=True)
         return done.stdout.strip()
 
-    def run_script(self, mode):
-        env = dict(self.env, FAKE_MODE=mode)
+    def run_script(self, mode, **extra_env):
+        env = dict(self.env, FAKE_MODE=mode, **extra_env)
         return subprocess.run(["bash", SCRIPT], env=env, capture_output=True, text=True)
 
     def notifications(self):
@@ -179,6 +188,91 @@ class WeeklyRunTest(unittest.TestCase):
         self.assertRegex(subjects[0], r"^Weekly prices ")
         with open(os.path.join(self.repo, "out", "last-run.log")) as fh:
             self.assertIn("push rejected", fh.read())
+
+    def test_refuses_when_local_main_is_ahead_of_origin(self):
+        self._put("other.txt", "local only\n")
+        self.git(self.repo, "commit", "-q", "-am", "never pushed")
+        local = self.head()
+        done = self.run_script("append")
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(self.head(), local)
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.base)
+        self.assertIn("ahead of origin/main", self.notifications()[0])
+
+    def test_failed_second_push_leaves_a_commit_the_next_run_refuses_to_stack_on(self):
+        hook = os.path.join(self.origin, "hooks", "pre-receive")
+        with open(hook, "w") as fh:
+            fh.write("#!/bin/sh\nexit 1\n")
+        os.chmod(hook, 0o755)
+        first = self.run_script("append")
+        self.assertEqual(first.returncode, 1)
+        self.assertIn("push failed twice", self.notifications()[-1])
+        stranded = self.head()
+        self.assertNotEqual(stranded, self.base)
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.base)
+        os.remove(hook)
+        second = self.run_script("append")
+        self.assertEqual(second.returncode, 1)
+        self.assertEqual(self.head(), stranded)
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.base)
+        self.assertIn("ahead of origin/main", self.notifications()[-1])
+
+    def test_a_bad_repo_path_still_notifies(self):
+        done = self.run_script("append", WEEKLY_REPO=os.path.join(self.tmp, "missing"))
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(len(self.notifications()), 1)
+        self.assertIn("failed: cannot cd to", self.notifications()[0])
+
+    def test_an_unopenable_log_still_notifies(self):
+        os.makedirs(os.path.join(self.repo, "out", "last-run.log"))
+        done = self.run_script("append")
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(self.head(), self.base)
+        self.assertEqual(len(self.notifications()), 1)
+        self.assertIn("failed: cannot open the log", self.notifications()[0])
+
+    def test_refuses_finder_output_without_the_summary_lines(self):
+        done = self.run_script("noparse")
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(self.head(), self.base)
+        self.assertEqual(self.git(self.repo, "diff", "--cached", "--name-only"), "")
+        self.assertIn("lacks exactly one valid", self.notifications()[0])
+
+    def test_refuses_to_push_when_more_than_the_history_commit_is_outgoing(self):
+        done = self.run_script("extra_commit")
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.base)
+        self.assertIn("outgoing range is not exactly one commit", self.notifications()[-1])
+
+    def test_refuses_a_duplicated_summary_line(self):
+        done = self.run_script("dupe")
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(self.head(), self.base)
+        self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.base)
+
+    def test_rebase_conflict_is_aborted_and_the_commit_stays_local(self):
+        done = self.run_script("conflict")
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("rebase failed, the commit stays local", self.notifications()[-1])
+        self.assertFalse(os.path.isdir(os.path.join(self.repo, ".git", "rebase-merge")))
+        self.assertRegex(self.git(self.repo, "log", "-1", "--format=%s"), r"^Weekly prices ")
+        self.assertNotEqual(self.git(self.origin, "rev-parse", "main"), self.head())
+
+    def test_failed_rebase_abort_sends_a_manual_recovery_notification(self):
+        wrapper = os.path.join(self.tmp, "bin")
+        os.makedirs(wrapper)
+        real_git = shutil.which("git")
+        with open(os.path.join(wrapper, "git"), "w") as fh:
+            fh.write('#!/usr/bin/env bash\n'
+                     'if [ "$1" = rebase ] && [ "$2" = --abort ]; then exit 1; fi\n'
+                     'exec "%s" "$@"\n' % real_git)
+        os.chmod(os.path.join(wrapper, "git"), 0o755)
+        done = self.run_script("conflict", PATH=wrapper + os.pathsep + os.environ["PATH"])
+        self.assertEqual(done.returncode, 1)
+        notes = self.notifications()
+        self.assertEqual(len(notes), 2, notes)
+        self.assertTrue(notes[0].startswith("Manual recovery needed"), notes)
+        self.assertIn("manual recovery needed", notes[1])
 
 
 if __name__ == "__main__":
