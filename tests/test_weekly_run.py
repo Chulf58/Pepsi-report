@@ -14,7 +14,7 @@ SCRIPT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))
                       "scripts", "weekly-run.sh")
 
 FAKE_FINDER = r"""#!/usr/bin/env bash
-# FAKE_MODE: report_only | dupe_note | append | errors | crash | unchanged | touch_other | race | conflict | noparse | dupe | extra_commit
+# FAKE_MODE: report_only | nonote | badnote | longnote | dupe_note | append | errors | crash | unchanged | touch_other | race | conflict | noparse | dupe | extra_commit
 case "$FAKE_MODE" in
   race|conflict)
     # Another machine pushes to origin after our pull and before our push.
@@ -33,7 +33,7 @@ case "$FAKE_MODE" in
     echo "extra" >> other.txt && git commit -q -am "stray commit"
     echo "2026-10-26,new row" >> data/history.csv
     ;;
-  append|race|conflict|noparse|dupe|touch_other) echo "2026-10-26,new row" >> data/history.csv ;;
+  append|race|conflict|noparse|dupe|touch_other|nonote|badnote|longnote|dupe_note) echo "2026-10-26,new row" >> data/history.csv ;;
   report_only) ;;
   errors) echo "2026-10-26,new row" >> data/history.csv ;;
   crash) echo "half written" >> data/history.csv ;;
@@ -41,13 +41,19 @@ esac
 # The phone report is rewritten by every run that is not "unchanged"/"crash".
 case "$FAKE_MODE" in
   unchanged|crash) ;;
-  *) echo "report for $FAKE_MODE" > REPORT.md ;;
+  report_only) echo "report for $FAKE_MODE" > REPORT.md ;;
+  *) echo "report for $FAKE_MODE" > REPORT.md; echo "2026-10-26" > data/last_success.txt ;;
 esac
 [ "$FAKE_MODE" = touch_other ] && echo "changed" >> other.txt
 [ "$FAKE_MODE" = noparse ] && exit 0
 echo "Offers kept: Pepsi Max: 3, Cult Energy: 2"
-[ -n "${FAKE_NOTE:-}" ] && echo "Notification: $FAKE_NOTE"
-[ "$FAKE_MODE" = dupe_note ] && { echo "Notification: a"; echo "Notification: b"; }
+case "$FAKE_MODE" in
+  nonote) ;;
+  dupe_note) echo "Notification: no good offers"; echo "Notification: no good offers" ;;
+  badnote) echo "Notification: whatever you like" ;;
+  longnote) echo "Notification: 1 good offer: $(printf 'x%.0s' $(seq 1 320))" ;;
+  *) echo "Notification: ${FAKE_NOTE-no good offers}" ;;
+esac
 [ "$FAKE_MODE" = dupe ] && echo "Offers kept: Pepsi Max: 1, Cult Energy: 1"
 if [ "$FAKE_MODE" = errors ]; then
   echo "Source errors: tjek: boom"
@@ -87,6 +93,7 @@ class WeeklyRunTest(unittest.TestCase):
         self._put("data/history.csv", "date,price\n")
         self._put("other.txt", "keep\n")
         self._put("REPORT.md", "old report\n")
+        self._put("data/last_success.txt", "2026-10-01\n")
         self.git(self.repo, "add", "-A")
         self.git(self.repo, "commit", "-q", "-m", "initial")
         self.git(self.repo, "push", "-q", "origin", "main")
@@ -124,7 +131,7 @@ class WeeklyRunTest(unittest.TestCase):
         done = self.run_script("append")
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(self.git(self.repo, "show", "--name-only", "--format=", "HEAD"),
-                         "REPORT.md\ndata/history.csv")
+                         "REPORT.md\ndata/history.csv\ndata/last_success.txt")
         self.assertEqual(self.git(self.repo, "rev-parse", "HEAD~1"), self.base)
         subject = self.git(self.repo, "log", "-1", "--format=%s")
         self.assertRegex(subject, r"^Weekly prices \d{4}-\d{2}-\d{2}$")
@@ -133,12 +140,12 @@ class WeeklyRunTest(unittest.TestCase):
         self.assertIn("Source errors: none", body)
         self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.head())
         self.assertIn("scratch.txt", self.git(self.repo, "status", "--porcelain"))
-        self.assertEqual(self.notifications(), ["OK, 5 offers|Pepsi prices updated"])
+        self.assertEqual(self.notifications(), ["OK, 5 offers; no good offers|Pepsi prices updated"])
         with open(os.path.join(self.repo, "out", "last-run.log")) as fh:
             log = fh.read()
         self.assertIn("Offers kept:", log)
         # the notifier's stdout is captured and appended by the script itself
-        self.assertEqual(log.count("fake notifier shown: OK, 5 offers"), 1)
+        self.assertEqual(log.count("fake notifier shown: OK, 5 offers; no good offers"), 1)
 
     def test_report_md_alone_is_committed_when_history_is_unchanged(self):
         done = self.run_script("report_only")
@@ -154,7 +161,7 @@ class WeeklyRunTest(unittest.TestCase):
         done = self.run_script("append")
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(self.git(self.repo, "show", "--name-only", "--format=", "HEAD"),
-                         "REPORT.md\ndata/history.csv")
+                         "REPORT.md\ndata/history.csv\ndata/last_success.txt")
 
     def test_notification_names_the_good_offers(self):
         note = "2 good offers: 365discount 9.47, Løvbjerg 10.10"
@@ -165,6 +172,25 @@ class WeeklyRunTest(unittest.TestCase):
     def test_notification_says_when_there_are_no_good_offers(self):
         done = self.run_script("append", FAKE_NOTE="no good offers")
         self.assertEqual(self.notifications(), ["OK, 5 offers; no good offers|Pepsi prices updated"])
+
+    def test_refuses_a_missing_malformed_or_overlong_notification_line(self):
+        for mode in ("nonote", "badnote", "longnote"):
+            done = self.run_script(mode)
+            self.assertEqual(done.returncode, 1, mode)
+            self.assertEqual(self.head(), self.base, mode)
+            self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.base, mode)
+            self.assertIn("lacks exactly one valid", self.notifications()[-1], mode)
+            self.git(self.repo, "checkout", "-q", "--", ".")
+
+    def test_last_success_file_is_committed_with_the_other_two(self):
+        done = self.run_script("append")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(self.git(self.repo, "show", "HEAD:data/last_success.txt"), "2026-10-26")
+
+    def test_a_third_changed_file_next_to_last_success_is_refused(self):
+        done = self.run_script("touch_other")
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(self.head(), self.base)
 
     def test_refuses_two_notification_lines(self):
         done = self.run_script("dupe_note")
@@ -184,7 +210,7 @@ class WeeklyRunTest(unittest.TestCase):
         self.assertEqual(done.returncode, 2, done.stderr)
         self.assertEqual(self.git(self.origin, "rev-parse", "main"), self.head())
         self.assertIn("Source errors: tjek: boom", self.git(self.repo, "log", "-1", "--format=%b"))
-        self.assertEqual(self.notifications(), ["Source errors, 5 offers|Pepsi prices updated"])
+        self.assertEqual(self.notifications(), ["Source errors, 5 offers; no good offers|Pepsi prices updated"])
 
     def test_refuses_when_another_tracked_file_is_dirty(self):
         self._put("other.txt", "edited\n")
@@ -222,7 +248,7 @@ class WeeklyRunTest(unittest.TestCase):
         done = self.run_script("unchanged")
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(self.head(), self.base)
-        self.assertEqual(self.notifications(), ["OK, 5 offers|Pepsi prices updated"])
+        self.assertEqual(self.notifications(), ["OK, 5 offers; no good offers|Pepsi prices updated"])
 
     def test_switches_to_main_first(self):
         self.git(self.repo, "checkout", "-q", "-b", "side")

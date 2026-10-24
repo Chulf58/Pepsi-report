@@ -8,7 +8,7 @@ import tempfile
 from dealfinder.match import load_known_ids
 from dealfinder.pipeline import Outcome, normalize_nemlig, normalize_rema, normalize_tjek
 from dealfinder.report import csv_safe, link_html
-from dealfinder.sources import (NEMLIG_MAX_IDS, USER_AGENT, SourceError, fetch_nemlig,
+from dealfinder.sources import (NEMLIG_MAX_IDS, NEMLIG_PASSES, USER_AGENT, SourceError, fetch_nemlig,
                                 fetch_nemlig_weeks, fetch_rema, fetch_tjek, next_week_slot)
 
 
@@ -135,6 +135,33 @@ class NemligNextWeekTest(unittest.TestCase):
         seq = self.Seq()
         passes, errors = fetch_nemlig_weeks(seq, ["1"])
         self.assertEqual((len(passes), len(seq.urls)), (1, 3))
+
+
+class NemligCapTest(unittest.TestCase):
+    """At most NEMLIG_MAX_IDS product requests per run, counted over both slot passes."""
+
+    def run_fetch(self, n, next_week):
+        seq = NemligNextWeekTest.Seq()
+        try:
+            return seq, fetch_nemlig_weeks(seq, [str(i) for i in range(n)], next_week=next_week)
+        except ValueError as e:
+            return seq, e
+
+    def test_two_passes_at_the_cap_are_allowed(self):
+        seq, (passes, errors) = self.run_fetch(NEMLIG_MAX_IDS // NEMLIG_PASSES, True)
+        product_gets = [u for u in seq.urls if "Products/Get" in u[0]]
+        self.assertEqual((len(passes), errors, len(product_gets)), (2, [], 24))
+
+    def test_two_passes_over_the_cap_are_refused_before_any_request(self):
+        seq, err = self.run_fetch(NEMLIG_MAX_IDS // NEMLIG_PASSES + 1, True)
+        self.assertIsInstance(err, ValueError)
+        self.assertIn("26 product requests", str(err))
+        self.assertEqual(seq.urls, [])
+
+    def test_one_pass_may_use_the_whole_cap(self):
+        seq, (passes, errors) = self.run_fetch(NEMLIG_MAX_IDS, False)
+        self.assertEqual((len(passes), len([u for u in seq.urls if "Products/Get" in u[0]])),
+                         (1, NEMLIG_MAX_IDS))
 
 
 class PantExclusionTest(unittest.TestCase):
@@ -341,11 +368,13 @@ class ProductListTest(unittest.TestCase):
             self.load({"rema": {"Pepsi Max": ["7", "8"], "Cult Energy": ["7"]}})
 
     def test_too_many_nemlig_ids_refused(self):
-        ids = [str(i) for i in range(NEMLIG_MAX_IDS + 1)]
+        # The cap counts product requests over both slot passes: 12 ids = 24 requests.
+        top = NEMLIG_MAX_IDS // NEMLIG_PASSES
+        ids = [str(i) for i in range(top + 1)]
         with self.assertRaisesRegex(ValueError, "more than the cap"):
             self.load({"nemlig": {"Pepsi Max": ids}})
         self.assertEqual(len(self.load({"nemlig": {"Pepsi Max": ids[:-1]}})["nemlig"]["Pepsi Max"]),
-                         NEMLIG_MAX_IDS)
+                         top)
 
     def test_fetch_refuses_over_cap_before_any_request(self):
         stub = StubTransport(SourceError("never"))

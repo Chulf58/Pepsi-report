@@ -7,7 +7,7 @@ from datetime import date
 
 from dealfinder.flags import Limits, flag_reason, flagged_offers, load_limits, toast_text
 from dealfinder.history import Baseline, Observation, week_labels, weekly_lows
-from dealfinder.report import Extras, age_lines
+from dealfinder.report import Extras, _md, age_lines, write_report_md
 
 TODAY = date(2026, 10, 24)
 LIMITS = Limits({"Pepsi Max": 10.0, "Cult Energy": 12.0}, 10.0)
@@ -89,6 +89,28 @@ class LimitsFileTest(unittest.TestCase):
             self.load({"good_offer": {"max_kr_per_l": {"Pepsi Max": -1}}})
         with self.assertRaises(ValueError):
             self.load({"good_offer": {"below_average_percent": "ten"}})
+
+
+class MarkdownTextTest(unittest.TestCase):
+    def test_line_breaks_become_spaces_and_backslashes_are_escaped_before_pipes(self):
+        self.assertEqual(_md("a\r\nb\rc\nd"), "a b c d")
+        self.assertEqual(_md("a|b"), "a\\|b")
+        # A backslash typed before a pipe must not swallow the pipe's escape.
+        self.assertEqual(_md("x\\|y"), "x\\\\\\|y")
+
+
+class MarkdownReportEscapingTest(unittest.TestCase):
+    def test_notification_and_cheapest_now_text_are_escaped(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "REPORT.md")
+            listed = [(obs(9.0, store="Net|to\nX"), "", None, "", "")]
+            write_report_md(path, "run", listed, [], [], TODAY,
+                            Extras(toast="1 good offer: a|b\r\nc", last_success="2026-10-24"))
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
+        self.assertIn("\n1 good offer: a\\|b c\n", text)
+        self.assertIn("- Cheapest now, Pepsi Max: 9.00 kr/L at Net\\|to X, ", text)
+        self.assertNotIn("\r", text)
 
 
 class AgeTest(unittest.TestCase):

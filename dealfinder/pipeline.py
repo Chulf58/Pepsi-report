@@ -2,7 +2,7 @@
 
 import math
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from .history import Observation, dedupe
 from .match import KEEP, QUARANTINE, UNRELATED, VARIANTS, classify_with_ids, is_danish_dealer
@@ -52,6 +52,9 @@ class Outcome:
     text_matched: list = field(default_factory=list)
     # Next week's nemlig prices that differ from this week's: listed, never written to history.
     upcoming: list = field(default_factory=list)
+    # Counts from the next-week nemlig pass (rejected, expired, bottles, ...), kept apart
+    # from the main counters so the same product is not counted twice.
+    next_week: Counter = field(default_factory=Counter)
 
     def drop_bottle(self, store):
         self.bottles_dropped += 1
@@ -437,13 +440,23 @@ def build(tjek_offers, rema_products, today, run_id, nemlig_products=(), known=N
     normalize_rema(rema_products, today, run_id, outcome)
     normalize_nemlig(nemlig_products, today, run_id, outcome, nemlig_slot)
     if nemlig_next:
-        # Next week's slot: keep only what differs from this week, dated from that slot.
+        # Next week's slot: keep only what differs from this week. A row cannot start before
+        # that slot's date, so a campaign already running is dated from the slot.
         scratch = Outcome(known=outcome.known)
-        normalize_nemlig(nemlig_next, today, run_id, scratch, nemlig_next_slot,
-                         slot_date(nemlig_next_slot))
+        slot_from = slot_date(nemlig_next_slot)
+        normalize_nemlig(nemlig_next, today, run_id, scratch, nemlig_next_slot, slot_from)
         now = {(o.source_id, o.price_dkk) for o in outcome.observations}
-        outcome.upcoming = [o for o in dedupe(scratch.observations)
+        outcome.upcoming = [replace(o, valid_from=max(o.valid_from, slot_from))
+                            for o in dedupe(scratch.observations)
                             if (o.source_id, o.price_dkk) not in now]
+        # Errors, quarantines and counts from that pass are reported too; its observations
+        # never reach history.
+        outcome.row_errors += [(src, "next week: " + msg) for src, msg in scratch.row_errors]
+        outcome.quarantined += scratch.quarantined
+        outcome.next_week.update(
+            {"rejected": sum(scratch.rejected.values()), "unrelated": scratch.unrelated,
+             "expired": scratch.expired, "bottles dropped": scratch.bottles_dropped,
+             "out of stock": scratch.out_of_stock})
     outcome.observations = dedupe(outcome.observations)
     outcome.variants = dedupe(outcome.variants)
     seen, unique = set(), []

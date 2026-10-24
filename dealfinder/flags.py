@@ -4,7 +4,9 @@ report-flags-good-offers-fixed-limit-then-below-average).
 An offer is flagged when it is valid now, is a confirmed Pepsi Max or Cult Energy row (not
 a "variants, Max likely" row, not next week's price) and either its kr/L is under the fixed
 limit for its product, or, once 4 weeks of history give a 12-week average, it is at least
-the configured percentage below that average. The limits live in data/products.json under
+the configured percentage below that average. "Confirmed" means exactly that the row is
+neither a variants row nor quarantined; it does not mean a product id was matched, because
+Tjek offers never carry one. The limits live in data/products.json under
 "good_offer"; without that key nothing is flagged.
 """
 

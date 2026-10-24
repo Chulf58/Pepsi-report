@@ -52,8 +52,13 @@ class ProductMatchTest(unittest.TestCase):
         self.assertKeep("Faxe Kondi lime, Pepsi Max 24 x 33 cl ds", PEPSI_MAX)
         self.assertStatus("Pepsi Max Lime 24 x 33 cl ds", REJECT)
         self.assertStatus("Lime Pepsi Max 24 x 33 cl ds", REJECT)
-        # Was rejected before the flavour check was scoped; "Fx lime" is a Faxe flavour.
-        self.assertKeep("Pepsi Max eller Faxe Kondi\nFlere varianter. Fx lime.", PEPSI_MAX)
+
+    def test_flavour_in_a_later_clause_that_names_no_product_is_quarantined(self):
+        # "Fx lime" can mean "for example lime", so the row may be Pepsi Max Lime: neither
+        # keep it nor reject it. A flavour in the Faxe Kondi clause is still tied to Faxe.
+        self.assertStatus("Pepsi Max eller Faxe Kondi\nFlere varianter. Fx lime.", QUARANTINE)
+        self.assertStatus("Pepsi Max 24 x 33 cl ds. Flere varianter, fx lime.", QUARANTINE)
+        self.assertKeep("Pepsi Max eller Faxe Kondi med citron\n24 x 33 cl ds", PEPSI_MAX)
 
     def test_unexplained_words_after_max_quarantined(self):
         self.assertStatus("Pepsi Max Xtreme Edition 33 cl ds", QUARANTINE)

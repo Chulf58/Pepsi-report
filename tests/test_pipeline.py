@@ -1,3 +1,4 @@
+import contextlib
 import csv
 import io
 import json
@@ -6,6 +7,7 @@ import shutil
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from datetime import date
 
 from dealfinder.cli import main
 from dealfinder.history import HEADER, load_history
@@ -73,12 +75,14 @@ class OfflineRunTest(unittest.TestCase):
                                       "below_average_percent": 10}}, f)
         return fx
 
-    def run_cli(self, today, fixtures=FIXTURES, report_md=None):
+    def run_cli(self, today, fixtures=FIXTURES, report_md=None, last_success=None):
         buf = io.StringIO()
         products = os.path.join(fixtures, "products.json")
         extra = ["--products", products] if os.path.exists(products) else []
         if report_md:
             extra += ["--report-md", report_md]
+        if last_success:
+            extra += ["--last-success", last_success]
         with redirect_stdout(buf):
             code = main(["--offline", fixtures, "--history", self.history,
                          "--out", self.out, "--today", today] + extra)
@@ -153,7 +157,7 @@ class OfflineRunTest(unittest.TestCase):
         self.assertEqual([(r["store"], r["kr_per_l"], r["valid_from"]) for r in report
                           if r["section"] == "later"],
                          [("REMA 1000", "10.61", "2026-10-29"),
-                          ("nemlig.com", "20.2", "2026-10-26")])
+                          ("nemlig.com", "20.2", "2026-10-31")])
         html = self.report_html()
         self.assertIn("Quarantine", html)
         self.assertNotIn('<h2 class="err">Source errors', html)
@@ -297,17 +301,17 @@ class OfflineRunTest(unittest.TestCase):
                             r["note"] == "next week, nemlig slot" for r in nemlig))
         self.assertIn("2026102414-60-240, zone 1", {r["delivery_slot"] for r in nemlig})
         later = [r for r in nemlig if r["section"] == "later"]
-        # The 2-for-80 campaign of 5007899 runs again from 2026-10-26; the other nemlig
-        # prices are the same next week and are not repeated.
+        # The 2-for-80 campaign of 5007899 runs again from 2026-10-26, so it is dated from the
+        # next slot (2026-10-31); the other nemlig prices are the same next week.
         self.assertEqual([(r["valid_from"], r["pack"], r["note"], r["delivery_slot"])
                           for r in later],
-                         [("2026-10-26", "6 x 0.33 L cans, 2 for 80.00", "next week, nemlig slot",
+                         [("2026-10-31", "6 x 0.33 L cans, 2 for 80.00", "next week, nemlig slot",
                            "2026103114-60-240, zone 1")])
         self.assertIn("Next week's nemlig prices listed (not in history): 1", summary)
         # Next week's prices and the slot never reach history.csv.
         rows = load_history(self.history)
         self.assertNotIn("slot", rows[0])
-        self.assertFalse([r for r in rows if r["valid_from"] == "2026-10-26"])
+        self.assertFalse([r for r in rows if r["valid_from"] == "2026-10-31"])
 
     def test_good_offers_flag_summary_and_notification(self):
         code, summary = self.run_cli("2026-10-24")
@@ -358,26 +362,81 @@ class OfflineRunTest(unittest.TestCase):
         self.assertNotIn("<", text)
         self.assertTrue(text.endswith("\n"))
 
+    def test_report_md_offer_tables_carry_the_delivery_slot(self):
+        md = os.path.join(self.tmp, "REPORT.md")
+        self.run_cli("2026-10-24", report_md=md)
+        with open(md, encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn("| Flag | Slot |", text)
+        self.assertIn("| 2026102414-60-240, zone 1 |", text)
+        self.assertIn("| 2026103114-60-240, zone 1 |", text)
+
     def test_offline_run_writes_no_report_md_by_default(self):
         self.run_cli("2026-10-24")
         self.assertFalse(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__))), "REPORT.md")))
 
-    def test_old_last_collection_warns_in_summary_html_and_md(self):
-        # A run with source errors is not a successful collection; the last good one is old.
-        self.seed([("2026-10-05", "9")])
+    def partial_fixtures(self):
         partial = os.path.join(self.tmp, "partial")
-        os.mkdir(partial)
-        for name in ("tjek_pepsi_max.json", "tjek_cult.json", "tjek_pepsi.json"):
-            shutil.copy(os.path.join(FIXTURES, name), partial)
+        if not os.path.isdir(partial):
+            os.mkdir(partial)
+            for name in ("tjek_pepsi_max.json", "tjek_cult.json", "tjek_pepsi.json"):
+                shutil.copy(os.path.join(FIXTURES, name), partial)
+        return partial
+
+    def test_last_success_survives_failed_runs_and_drives_the_warning(self):
+        ls = os.path.join(self.tmp, "last_success.txt")
         md = os.path.join(self.tmp, "REPORT.md")
-        code, summary = self.run_cli("2026-10-24", fixtures=partial, report_md=md)
+        # Good run: the date is recorded.
+        code, summary = self.run_cli("2026-10-05", last_success=ls)
+        self.assertEqual(code, 0, summary)
+        with open(ls, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "2026-10-05\n")
+        # Partial failure a week later: not a success, the date stays, no warning yet.
+        code, summary = self.run_cli("2026-10-12", self.partial_fixtures(), last_success=ls)
+        self.assertEqual(code, 2)
+        self.assertIn("Last successful collection: 2026-10-05 (7 days before this run)", summary)
+        self.assertNotIn("WARNING", summary)
+        # Another failure 19 days after the good run: the warning counts from the good date.
+        code, summary = self.run_cli("2026-10-24", self.partial_fixtures(), report_md=md,
+                                     last_success=ls)
         self.assertEqual(code, 2)
         self.assertIn("Last successful collection: 2026-10-05 (19 days before this run)", summary)
         self.assertIn("WARNING: the last successful collection is 19 days old", summary)
         self.assertIn("WARNING", self.report_html())
         with open(md, encoding="utf-8") as f:
             self.assertIn("WARNING", f.read())
+        with open(ls, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "2026-10-05\n")
+
+    def test_a_run_with_zero_offers_and_no_errors_is_a_success(self):
+        ls = os.path.join(self.tmp, "last_success.txt")
+        with open(ls, "w", encoding="utf-8") as f:
+            f.write("2026-09-01\n")
+        code, summary = self.run_cli("2026-10-24", self.fixture([]), last_success=ls)
+        self.assertEqual(code, 0, summary)
+        self.assertIn("Offers kept: Pepsi Max: 0, Cult Energy: 0", summary)
+        self.assertIn("Last successful collection: 2026-10-24 (0 days before this run)", summary)
+        with open(ls, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "2026-10-24\n")
+
+    def test_no_last_success_file_and_a_failed_run_means_none_on_record(self):
+        code, summary = self.run_cli("2026-10-24", self.partial_fixtures(),
+                                     last_success=os.path.join(self.tmp, "last_success.txt"))
+        self.assertIn("Last successful collection: none on record before this run", summary)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "last_success.txt")))
+
+    def test_a_garbled_last_success_file_stops_the_run(self):
+        ls = os.path.join(self.tmp, "last_success.txt")
+        with open(ls, "w", encoding="utf-8") as f:
+            f.write("last tuesday\n")
+        buf = io.StringIO()
+        err = io.StringIO()
+        with redirect_stdout(buf), contextlib.redirect_stderr(err):
+            code = main(["--offline", FIXTURES, "--history", self.history, "--out", self.out,
+                         "--today", "2026-10-24", "--last-success", ls])
+        self.assertEqual(code, 1)
+        self.assertIn("Cannot read last success file", err.getvalue())
 
     def test_weekly_low_view_leaves_missing_weeks_blank(self):
         self.seed([("2026-10-05", "9"), ("2026-10-19", "11")])
@@ -480,6 +539,69 @@ class OfflineRunTest(unittest.TestCase):
         self.assertEqual(len(coverage), 1)
         self.assertNotIn("rema_page", coverage[0])
         self.assertEqual(len([l for l in summary.splitlines() if l.startswith("Source errors:")]), 1)
+
+
+NEMLIG_PRODUCT = os.path.join(FIXTURES, "nemlig_product_5007899.json")
+NEXT_SLOT = "2026103114-60-240, zone 1"
+
+
+class NextWeekNemligTest(unittest.TestCase):
+    """Next week's nemlig slot: dating, and what is reported from that pass."""
+    known = {"nemlig": {"Pepsi Max": {"5007899", "9", "10"}, "Cult Energy": set()}}
+
+    def build_next(self, products):
+        from dealfinder.pipeline import build
+        return build([], [], date(2026, 10, 24), "run", [], self.known, "", products, NEXT_SLOT)
+
+    def test_a_campaign_already_running_is_dated_from_the_next_slot(self):
+        with open(NEMLIG_PRODUCT, encoding="utf-8") as f:
+            product = json.load(f)
+        # The campaign began on 2026-10-21, before the run, and runs through next week.
+        product["Campaign"]["IntervalStart"] = "2026-10-20T22:00:00Z"
+        product["Campaign"]["IntervalEnd"] = "2026-11-01T22:59:59Z"
+        outcome = self.build_next([product])
+        self.assertEqual(outcome.observations, [])
+        by_pack = {o.pack: o.valid_from for o in outcome.upcoming}
+        self.assertEqual(len(by_pack), 2)
+        self.assertEqual(set(by_pack.values()), {"2026-10-31"})
+
+    def test_errors_quarantines_and_counts_from_next_week_are_reported(self):
+        bad = {"Id": "9", "Name": "Pepsi Max", "Description": "24 x 33 cl", "Availability": "yes"}
+        bottle = {"Id": "10", "Name": "Pepsi Max", "Description": "1,5 liter. + pant",
+                  "Price": 12.0, "Availability": {"IsAvailableInStock": True,
+                                                  "IsDeliveryAvailable": True}}
+        sold_out = {"Id": "5007899", "Name": "Pepsi Max", "Description": "24 x 33 cl",
+                    "Price": 100.0, "Availability": {"IsAvailableInStock": False,
+                                                     "IsDeliveryAvailable": True}}
+        outcome = self.build_next([bad, bottle, sold_out])
+        self.assertEqual([m for _, m in outcome.row_errors],
+                         ["next week: product 9 skipped: Availability is str, not an object"])
+        self.assertEqual(outcome.next_week["bottles dropped"], 1)
+        self.assertEqual(outcome.next_week["out of stock"], 1)
+        # Not counted as this week's.
+        self.assertEqual((outcome.bottles_dropped, outcome.out_of_stock), (0, 0))
+        self.assertEqual((outcome.observations, outcome.upcoming), ([], []))
+
+    def test_next_week_quarantine_is_reported(self):
+        odd = {"Id": "5007899", "Name": "Pepsi Max", "Description": "24 x 33 cl", "Price": 0,
+               "Availability": {"IsAvailableInStock": True, "IsDeliveryAvailable": True}}
+        outcome = self.build_next([odd])
+        self.assertEqual([(q.store, q.reason) for q in outcome.quarantined],
+                         [("nemlig.com", "no usable price")])
+
+    def test_next_week_problems_reach_the_run_summary_and_exit_code(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        fx = os.path.join(tmp, "fx")
+        shutil.copytree(FIXTURES, fx)
+        with open(os.path.join(fx, "nemlig_product_5016248_next.json"), "w", encoding="utf-8") as f:
+            json.dump(["not an object"], f)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = main(["--offline", fx, "--history", os.path.join(tmp, "h.csv"),
+                         "--out", os.path.join(tmp, "out"), "--today", "2026-10-24"])
+        self.assertEqual(code, 2)
+        self.assertIn("unexpected product shape for id 5016248", buf.getvalue())
 
 
 if __name__ == "__main__":

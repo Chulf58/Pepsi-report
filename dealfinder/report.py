@@ -281,17 +281,19 @@ def _weekly_table(extras):
 
 
 def _md(text):
-    return str(text).replace("|", "\\|").replace("\n", " ")
+    """Text for a markdown table cell or line: line breaks become spaces, | and \\ are escaped."""
+    flat = re.sub(r"\r\n|\r|\n", " ", str(text))
+    return flat.replace("\\", "\\\\").replace("|", "\\|")
 
 
 def _md_offers(rows):
-    out = ["| Product | Store | Pack | kr | kr/L | kr/can | vs avg | From | To | Flag |",
-           "|---|---|---|--:|--:|--:|--:|---|---|---|"]
+    out = ["| Product | Store | Pack | kr | kr/L | kr/can | vs avg | From | To | Flag | Slot |",
+           "|---|---|---|--:|--:|--:|--:|---|---|---|---|"]
     for o, vs, base, note, flag in rows:
-        out.append("| %s | %s | %s | %.2f | %.2f | %.2f | %s | %s | %s | %s |" % (
+        out.append("| %s | %s | %s | %.2f | %.2f | %.2f | %s | %s | %s | %s | %s |" % (
             _md(o.product + (" (%s)" % note if note else "")), _md(o.store), _md(o.pack),
             o.price_dkk, o.kr_per_l, kr_per_can(o), vs, o.valid_from, o.valid_to or "",
-            _md(flag)))
+            _md(flag), _md(o.slot)))
     return out
 
 
@@ -309,10 +311,10 @@ def write_report_md(path, run_id, listed, quarantined, errors, today, extras):
         out += ["", "## Source errors", ""] + ["- %s: %s" % (_md(s), _md(m)) for s, m in errors]
         out.append("")
         out.append("Offers from a failed source are missing.")
-    out += ["", "## Notification", "", extras.toast or "no good offers"]
+    out += ["", "## Notification", "", _md(extras.toast or "no good offers")]
     out += ["", "## Cheapest now", ""]
     cheapest = _cheapest_now(available)
-    out += ["- " + line for line in cheapest] or ["None."]
+    out += ["- " + _md(line) for line in cheapest] or ["None."]
     out += ["", "## Good offers", ""]
     out += ["- %s %.2f kr/L, %s (%s)" % (_md(o.store), o.kr_per_l, _md(o.product), _md(flag))
             for o, flag in sorted(flagged, key=lambda t: (t[0].kr_per_l, t[0].store))] or ["None."]

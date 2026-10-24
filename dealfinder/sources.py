@@ -14,8 +14,10 @@ USER_AGENT = "PepsiReport-dealfinder/0.1 (personal weekly price check; low volum
 TJEK_URL = "https://api.etilbudsavis.dk/v2/offers/search"
 REMA_URL = "https://api.digital.rema1000.dk/api/v3/products"
 NEMLIG_BASE = "https://www.nemlig.com"
-# Hard cap on nemlig product requests per run (one per id).
+# Hard cap on nemlig product requests per run, counted over every slot pass.
 NEMLIG_MAX_IDS = 25
+# This week and next week each read every id once; the cap counts both passes.
+NEMLIG_PASSES = 2
 # At most 3 queries x 3 centres x 3 pages = 27 requests; a short page stops a centre early.
 # "pepsi" finds flyer rows that name Pepsi Max only in the text; regular Pepsi is rejected later.
 TJEK_QUERIES = ("pepsi max", "cult", "pepsi")
@@ -167,9 +169,10 @@ def fetch_nemlig_weeks(transport, product_ids, next_week=False):
     passes, errors = [], []
     if not product_ids:
         return passes, errors
-    if len(product_ids) > NEMLIG_MAX_IDS:
-        raise ValueError("%d nemlig ids, more than the cap of %d; nothing was requested"
-                         % (len(product_ids), NEMLIG_MAX_IDS))
+    wanted = len(product_ids) * (NEMLIG_PASSES if next_week else 1)
+    if wanted > NEMLIG_MAX_IDS:
+        raise ValueError("%d nemlig ids need %d product requests, more than the cap of %d; "
+                         "nothing was requested" % (len(product_ids), wanted, NEMLIG_MAX_IDS))
     try:
         settings = transport.get_json("nemlig", NEMLIG_BASE + "/webapi/v2/AppSettings/Website",
                                       "nemlig_settings.json")

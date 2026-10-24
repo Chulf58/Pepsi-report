@@ -4,7 +4,7 @@ import json
 import re
 
 from .parse import parse_packs
-from .sources import NEMLIG_MAX_IDS
+from .sources import NEMLIG_MAX_IDS, NEMLIG_PASSES
 
 PEPSI_MAX = "Pepsi Max"
 CULT = "Cult Energy"
@@ -50,6 +50,26 @@ def _flavour_of_pepsi_max(t, mention):
     phrase = re.split(r"(?:^|\s)(?:eller|el|og|samt|or|and)\s|,", phrase, maxsplit=1)[0]
     found = _FLAVOUR.search(phrase) or _FLAVOUR_BEFORE.search(t[:mention.start()])
     return found.group(1) if found else None
+
+
+def _untied_flavour(t, maxes):
+    """A flavour word in a clause that names no Pepsi Max, or None.
+
+    "Pepsi Max eller Faxe Kondi. Flere varianter. Fx lime." can mean "for example lime",
+    so the row may be Pepsi Max Lime. A flavour in the same clause as a Pepsi Max mention
+    ("... Faxe Kondi med citron") belongs to the product named there and does not count.
+    """
+    segments, start = [], 0
+    for m in _PHRASE_END.finditer(t):
+        segments.append((start, m.start()))
+        start = m.end()
+    segments.append((start, len(t)))
+    for first, last in segments:
+        if not any(first <= mm.start() < last for mm in maxes):
+            found = _FLAVOUR.search(t[first:last])
+            if found:
+                return found.group(1)
+    return None
 
 
 def _max_phrase_is_plain(tail):
@@ -105,6 +125,10 @@ def classify_product(text, variant=None):
             if named:
                 return REJECT, None, "flavour named (%s)" % (
                     named if isinstance(named, str) else named.group(1))
+            untied = _untied_flavour(t, maxes)
+            if untied:
+                return QUARANTINE, PEPSI_MAX, (
+                    "flavour word (%s) in a later clause that names no product" % untied)
             tails = [t[m.end():] for m in maxes]
             if variant:
                 tails = [tail + " " + _norm(variant) for tail in tails]
@@ -148,9 +172,10 @@ def load_known_ids(path):
             raise ValueError("%s: %s ids listed under both products: %s"
                              % (path, source, ", ".join(sorted(both))))
     nemlig = known["nemlig"][PEPSI_MAX] | known["nemlig"][CULT]
-    if len(nemlig) > NEMLIG_MAX_IDS:
-        raise ValueError("%s: %d nemlig ids, more than the cap of %d requests per run"
-                         % (path, len(nemlig), NEMLIG_MAX_IDS))
+    if len(nemlig) * NEMLIG_PASSES > NEMLIG_MAX_IDS:
+        raise ValueError("%s: %d nemlig ids need %d product requests (this week and next), "
+                         "more than the cap of %d requests per run"
+                         % (path, len(nemlig), len(nemlig) * NEMLIG_PASSES, NEMLIG_MAX_IDS))
     return known
 
 

@@ -31,12 +31,28 @@ def parse_args(argv):
     p.add_argument("--report-md", metavar="PATH",
                    help="where to write the phone report (default: REPORT.md at the repo root; "
                         "none with --offline)")
+    p.add_argument("--last-success", metavar="PATH",
+                   help="file holding the date of the last run without source errors (default: "
+                        "data/last_success.txt; none with --offline)")
     p.add_argument("--today", type=date.fromisoformat,
                    help="run date YYYY-MM-DD (default: today in Denmark)")
     args = p.parse_args(argv)
-    if args.report_md is None and not args.offline:
-        args.report_md = os.path.join(ROOT, "REPORT.md")
+    if not args.offline:
+        if args.report_md is None:
+            args.report_md = os.path.join(ROOT, "REPORT.md")
+        if args.last_success is None:
+            args.last_success = os.path.join(ROOT, "data", "last_success.txt")
     return args
+
+
+def read_last_success(path):
+    """The stored date of the last run without source errors, '' when there is no file."""
+    if not path or not os.path.exists(path):
+        return ""
+    with open(path, encoding="utf-8") as f:
+        text = f.read().strip()
+    date.fromisoformat(text)
+    return text
 
 
 def main(argv=None):
@@ -46,6 +62,11 @@ def main(argv=None):
         limits = load_limits(args.products)
     except (OSError, ValueError) as e:
         print("Cannot read product id list %s: %s" % (args.products, e), file=sys.stderr)
+        return 1
+    try:
+        last_good = read_last_success(args.last_success)
+    except (OSError, ValueError) as e:
+        print("Cannot read last success file %s: %s" % (args.last_success, e), file=sys.stderr)
         return 1
     now = datetime.now(timezone.utc)
     today = args.today or copenhagen_date(now.strftime("%Y-%m-%dT%H:%M:%S%z"))
@@ -87,8 +108,12 @@ def main(argv=None):
     toast = toast_text(flagged)
     # History is written before the report, so a report never shows prices it did not keep.
     append_history(args.history, outcome.observations)
-    last_success = today.isoformat() if not errors else max(
-        (r["run_date"] for r in prior if r["run_id"] != run_id), default="")
+    # A run without source errors is a success, even with zero offers. A failed run leaves the
+    # stored date alone, so the age keeps counting from the last good run.
+    last_success = today.isoformat() if not errors else last_good
+    if not errors and args.last_success and last_good != last_success:
+        with open(args.last_success, "w", encoding="utf-8", newline="\n") as f:
+            f.write(last_success + "\n")
     extras = Extras(coverage, weekly_lows(load_history(args.history), today),
                     week_labels(today), last_success, toast)
 
@@ -98,6 +123,8 @@ def main(argv=None):
         "Offers kept: %s" % ", ".join("%s: %d" % (p, per_product[p]) for p in (PEPSI_MAX, CULT)),
         "Listed as '%s' (not in history): %d" % (VARIANTS_NOTE, len(outcome.variants)),
         "Next week's nemlig prices listed (not in history): %d" % len(outcome.upcoming),
+        "Next week's nemlig slot, not counted above: %s" % (", ".join(
+            "%s %d" % kv for kv in sorted(outcome.next_week.items()) if kv[1]) or "nothing"),
         "Bottles dropped: %d" % outcome.bottles_dropped,
         "Out of stock skipped (nemlig): %d" % outcome.out_of_stock,
         "Matched by text, not by a confirmed id: %d" % len(outcome.text_matched),
