@@ -2,5 +2,7 @@
   "note": "Confirmed product ids per source. A listed id is kept without the text rules; the cans and size rules still apply. nemlig ids are also the list of products the nemlig source fetches. Ids that matched by text are listed in the report so they can be checked and added here.",
   "tjek": {"Pepsi Max": [], "Cult Energy": []},
   "rema": {"Pepsi Max": ["211240", "211242"], "Cult Energy": []},
-  "nemlig": {"Pepsi Max": ["5007899", "5016248", "5061661"], "Cult Energy": []}
+  "nemlig": {"Pepsi Max": ["5007899", "5016248", "5061661"], "Cult Energy": []},
+  "good_offer": {"max_kr_per_l": {"Pepsi Max": 10, "Cult Energy": 12}, "below_average_percent": 10},
+  "good_offer_note": "Good-offer flag: a valid, confirmed offer is flagged when under max_kr_per_l for its product, or, once 4 weeks of history exist, at least below_average_percent below the 12-week average."
 }

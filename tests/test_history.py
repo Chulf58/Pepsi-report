@@ -3,10 +3,12 @@ import tempfile
 import unittest
 from datetime import date
 
-from dealfinder.history import (NOT_ENOUGH, Baseline, Observation, append_history,
-                                baseline, dedupe, load_history, percent_vs)
+from dealfinder.history import (HEADER, NOT_ENOUGH, Baseline, Observation, append_history,
+                                baseline, dedupe, load_history, lowest_seen_text,
+                                percent_vs)
 
 PM = "Pepsi Max"
+CULT_NAME = "Cult Energy"
 
 
 def row(run_date, kr, source_id, product=PM, run_id=None, source="tjek"):
@@ -40,6 +42,13 @@ class BaselineTest(unittest.TestCase):
         rows = PRIOR + [row("2026-10-12", 4.0, "b", source="rema")]
         self.assertEqual(baseline(rows, PM, RUN_ID, RUN_DATE).offers, 6)
 
+    def test_low_survives_a_later_higher_price_for_the_same_offer(self):
+        # One offer id stored at 8, 12, 16 and 20 kr/L in four weeks: the low is 8, the
+        # average is still over the one distinct offer at its latest price.
+        rows = [row("2026-09-21", 8.0, "z"), row("2026-09-28", 12.0, "z"),
+                row("2026-10-05", 16.0, "z"), row("2026-10-12", 20.0, "z")]
+        self.assertEqual(baseline(rows, PM, RUN_ID, RUN_DATE), Baseline(20.0, 8.0, 1, 4))
+
     def test_current_run_left_out(self):
         rows = PRIOR + [row("2026-10-19", 1.0, "now", run_id=RUN_ID)]
         self.assertEqual(baseline(rows, PM, RUN_ID, RUN_DATE), Baseline(10.0, 8.0, 5, 4))
@@ -71,6 +80,24 @@ class BaselineTest(unittest.TestCase):
         self.assertEqual(percent_vs(10.04, base), "0%")
 
 
+class LowestSeenTest(unittest.TestCase):
+    def test_text_for_one_week(self):
+        rows = [row("2026-10-12", 9.0, "a"), row("2026-10-12", 7.5, "b")]
+        self.assertEqual(lowest_seen_text(rows, PM, RUN_ID, RUN_DATE),
+                         "lowest seen so far: 7.50 kr/L (1 week sampled)")
+
+    def test_text_for_three_weeks_and_no_baseline_yet(self):
+        rows = PRIOR[:4]
+        self.assertEqual(lowest_seen_text(rows, PM, RUN_ID, RUN_DATE),
+                         "lowest seen so far: 8.00 kr/L (3 weeks sampled)")
+        self.assertIsNone(baseline(rows, PM, RUN_ID, RUN_DATE))
+
+    def test_none_without_history_and_baseline_appears_at_four_weeks(self):
+        self.assertIsNone(lowest_seen_text([], PM, RUN_ID, RUN_DATE))
+        self.assertIsNone(lowest_seen_text(PRIOR, CULT_NAME, RUN_ID, RUN_DATE))
+        self.assertIsNotNone(baseline(PRIOR, PM, RUN_ID, RUN_DATE))
+
+
 def obs(source_id, price=10.0, source="tjek", valid_from="2026-10-22"):
     return Observation(run_id=RUN_ID, run_date="2026-10-19", product=PM, source=source,
                        source_id=source_id, product_id=source_id, store="Netto", description="Pepsi Max",
@@ -80,6 +107,10 @@ def obs(source_id, price=10.0, source="tjek", valid_from="2026-10-22"):
 
 
 class DedupeAndStorageTest(unittest.TestCase):
+    def test_slot_is_not_a_history_column(self):
+        self.assertNotIn("slot", HEADER)
+        self.assertEqual(HEADER[-1], "url")
+
     def test_within_run_dedupe(self):
         got = dedupe([obs("a"), obs("a"), obs("b"), obs("a", source="rema"), obs("a", price=12.0)])
         self.assertEqual([(o.source, o.source_id, o.price_dkk) for o in got],

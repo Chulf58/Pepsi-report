@@ -138,6 +138,36 @@ def parse_packs(text):
     return PackParse([p for _, p in packs if p.count > 0 and p.unit_l > 0], ambiguous)
 
 
+# Between a pack ("24x33 cl") and the product it belongs to, a flyer may only put container
+# words and punctuation: "24x33 cl. ds. Pepsi Max".
+_BETWEEN_PACK_AND_NAME = re.compile(r"^[\s.,]*(?:(?:ds|dåser?|can|cans)\b[\s.,]*)*$", re.I)
+
+
+def pack_tied_to(text, name):
+    """The one multipack written directly before every mention of name, else None.
+
+    Used for a mixed flyer row that lists several packs for several products ("18x33 cl. ds.
+    Royal Export ... 24x33 cl. ds. Pepsi Max ..."). Every mention of name must have its own
+    "N x size" directly in front of it, and all of them must agree. A pack that only comes
+    after the name, or one with other words in between, is not tied and gives None.
+    """
+    text = _PER_LITRE_NOISE.sub(" ", text or "")
+    packs = [(m.end(), Pack(int(m.group(1)), _litres(m.group(2), m.group(3))))
+             for m in _MULTI.finditer(text)]
+    tied = []
+    for mention in re.finditer(name, text, re.I):
+        before = [(end, pk) for end, pk in packs if end <= mention.start()]
+        if not before:
+            return None
+        end, pk = before[-1]
+        if not _BETWEEN_PACK_AND_NAME.match(text[end:mention.start()]):
+            return None
+        tied.append(pk)
+    if not tied or any(pk != tied[0] for pk in tied):
+        return None
+    return tied[0]
+
+
 def parse_stated_kr_per_l(text):
     """The litre price printed in the offer text, or None when absent or only an upper bound."""
     text = text or ""

@@ -8,8 +8,8 @@ import tempfile
 from dealfinder.match import load_known_ids
 from dealfinder.pipeline import Outcome, normalize_nemlig, normalize_rema, normalize_tjek
 from dealfinder.report import csv_safe, link_html
-from dealfinder.sources import (NEMLIG_MAX_IDS, USER_AGENT, SourceError, fetch_nemlig,
-                                fetch_rema, fetch_tjek)
+from dealfinder.sources import (NEMLIG_MAX_IDS, NEMLIG_PASSES, USER_AGENT, SourceError, fetch_nemlig,
+                                fetch_nemlig_weeks, fetch_rema, fetch_tjek, next_week_slot)
 
 
 class StubTransport:
@@ -32,8 +32,34 @@ class TjekBlockTest(unittest.TestCase):
     def test_other_errors_are_reported_per_request_without_retry(self):
         stub = StubTransport(SourceError("request failed"))
         offers, errors = fetch_tjek(stub)
-        self.assertEqual(stub.calls, 6)  # 2 queries x 3 centres, one attempt each
-        self.assertEqual(len(errors), 6)
+        self.assertEqual(stub.calls, 9)  # 3 queries x 3 centres, one attempt each
+        self.assertEqual(len(errors), 9)
+
+    def test_request_count_is_capped_at_27(self):
+        class Full:
+            fixtures, calls = [], 0
+
+            def get_json(self, source, url, fixture):
+                self.calls += 1
+                self.fixtures.append(fixture)
+                return [{"id": "x%d" % self.calls}] * 100
+        full = Full()
+        offers, errors = fetch_tjek(full)
+        self.assertEqual(full.calls, 27)  # 3 queries x 3 centres x 3 pages, no early stop
+        self.assertEqual(sorted(set(full.fixtures)),
+                         ["tjek_cult.json", "tjek_pepsi.json", "tjek_pepsi_max.json"])
+        self.assertEqual(len(errors), 9)
+
+    def test_short_page_stops_early_for_each_query_and_centre(self):
+        class Short:
+            calls = 0
+
+            def get_json(self, source, url, fixture):
+                self.calls += 1
+                return [{"id": "x"}]
+        short = Short()
+        offers, errors = fetch_tjek(short)
+        self.assertEqual((short.calls, errors), (9, []))
 
     def test_user_agent_has_no_personal_data(self):
         self.assertNotRegex(USER_AGENT, r"@|mailto:")
@@ -74,6 +100,68 @@ def offer(description, price, heading="Pepsi Max"):
             "run_from": "2026-10-22T22:00:00+0000", "run_till": "2026-10-29T22:59:59+0000",
             "links": {"webshop": None},
             "dealer": {"name": "Netto", "country": {"id": "DK"}, "website": "https://netto.dk"}}
+
+
+class NemligNextWeekTest(unittest.TestCase):
+    class Seq:
+        def __init__(self):
+            self.urls = []
+
+        def get_json(self, source, url, fixture):
+            self.urls.append((url, fixture))
+            if fixture == "nemlig_settings.json":
+                return {"ProductsImportedTimestamp": "T"}
+            if fixture == "nemlig_basket.json":
+                return {"TimeslotUtc": "2026102414-60-240", "DeliveryZoneId": 1}
+            return {"Id": fixture}
+
+    def test_next_slot_is_one_week_later(self):
+        self.assertEqual(next_week_slot("2026102414-60-240"), "2026103114-60-240")
+        self.assertEqual(next_week_slot("2026122818-60-240"), "2027010418-60-240")
+        self.assertIsNone(next_week_slot("garbage"))
+
+    def test_second_pass_reads_the_later_slot_in_the_path(self):
+        seq = self.Seq()
+        passes, errors = fetch_nemlig_weeks(seq, ["1", "2"], next_week=True)
+        self.assertEqual(errors, [])
+        self.assertEqual([slot for slot, _ in passes],
+                         ["2026102414-60-240, zone 1", "2026103114-60-240, zone 1"])
+        self.assertEqual(len(seq.urls), 2 + 2 + 2)  # settings, basket, two ids per slot
+        self.assertIn("/T/2026102414-60-240/1/0/Products/Get", seq.urls[2][0])
+        self.assertIn("/T/2026103114-60-240/1/0/Products/Get", seq.urls[4][0])
+        self.assertEqual(seq.urls[4][1], "nemlig_product_1_next.json")
+
+    def test_this_week_only_by_default(self):
+        seq = self.Seq()
+        passes, errors = fetch_nemlig_weeks(seq, ["1"])
+        self.assertEqual((len(passes), len(seq.urls)), (1, 3))
+
+
+class NemligCapTest(unittest.TestCase):
+    """At most NEMLIG_MAX_IDS product requests per run, counted over both slot passes."""
+
+    def run_fetch(self, n, next_week):
+        seq = NemligNextWeekTest.Seq()
+        try:
+            return seq, fetch_nemlig_weeks(seq, [str(i) for i in range(n)], next_week=next_week)
+        except ValueError as e:
+            return seq, e
+
+    def test_two_passes_at_the_cap_are_allowed(self):
+        seq, (passes, errors) = self.run_fetch(NEMLIG_MAX_IDS // NEMLIG_PASSES, True)
+        product_gets = [u for u in seq.urls if "Products/Get" in u[0]]
+        self.assertEqual((len(passes), errors, len(product_gets)), (2, [], 24))
+
+    def test_two_passes_over_the_cap_are_refused_before_any_request(self):
+        seq, err = self.run_fetch(NEMLIG_MAX_IDS // NEMLIG_PASSES + 1, True)
+        self.assertIsInstance(err, ValueError)
+        self.assertIn("26 product requests", str(err))
+        self.assertEqual(seq.urls, [])
+
+    def test_one_pass_may_use_the_whole_cap(self):
+        seq, (passes, errors) = self.run_fetch(NEMLIG_MAX_IDS, False)
+        self.assertEqual((len(passes), len([u for u in seq.urls if "Products/Get" in u[0]])),
+                         (1, NEMLIG_MAX_IDS))
 
 
 class PantExclusionTest(unittest.TestCase):
@@ -280,11 +368,13 @@ class ProductListTest(unittest.TestCase):
             self.load({"rema": {"Pepsi Max": ["7", "8"], "Cult Energy": ["7"]}})
 
     def test_too_many_nemlig_ids_refused(self):
-        ids = [str(i) for i in range(NEMLIG_MAX_IDS + 1)]
+        # The cap counts product requests over both slot passes: 12 ids = 24 requests.
+        top = NEMLIG_MAX_IDS // NEMLIG_PASSES
+        ids = [str(i) for i in range(top + 1)]
         with self.assertRaisesRegex(ValueError, "more than the cap"):
             self.load({"nemlig": {"Pepsi Max": ids}})
         self.assertEqual(len(self.load({"nemlig": {"Pepsi Max": ids[:-1]}})["nemlig"]["Pepsi Max"]),
-                         NEMLIG_MAX_IDS)
+                         top)
 
     def test_fetch_refuses_over_cap_before_any_request(self):
         stub = StubTransport(SourceError("never"))

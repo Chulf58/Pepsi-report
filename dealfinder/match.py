@@ -4,7 +4,7 @@ import json
 import re
 
 from .parse import parse_packs
-from .sources import NEMLIG_MAX_IDS
+from .sources import NEMLIG_MAX_IDS, NEMLIG_PASSES
 
 PEPSI_MAX = "Pepsi Max"
 CULT = "Cult Energy"
@@ -22,6 +22,7 @@ FLAVOURS = (
     "blåbær", "strawberry", "jordbær", "ananas", "pineapple", "twist", "mojito",
 )
 _FLAVOUR = re.compile(r"\b(%s)\b" % "|".join(FLAVOURS))
+_FLAVOUR_BEFORE = re.compile(r"\b(%s)\s+$" % "|".join(FLAVOURS))
 _PEPSI_MAX = re.compile(r"\bpepsi[\s-]*max\b")
 _SEVERAL = re.compile(r"flere varianter|udvalgte varianter|alle varianter|frit valg")
 # What may follow "Pepsi Max" in a plain row, up to the end of that phrase: sizes, pack
@@ -34,6 +35,41 @@ _PACK_WORDS = frozenset((
 ))
 _CONNECTORS = frozenset(("eller", "el", "og", "samt", "or", "and", ","))
 _PHRASE_END = re.compile(r"\n|[|;!]|\.(\s|$)")
+
+
+def _flavour_of_pepsi_max(t, mention):
+    """The flavour word that belongs to one 'Pepsi Max' mention, or None.
+
+    Only the Pepsi phrase counts: the words up to the first connector or phrase end, and a
+    flavour word directly in front. "Pepsi Max eller Faxe Kondi med citron" names a flavour
+    for Faxe Kondi, not for Pepsi Max; "Pepsi Max Lime" is flavoured.
+    """
+    tail = t[mention.end():]
+    end = _PHRASE_END.search(tail)
+    phrase = tail[:end.start()] if end else tail
+    phrase = re.split(r"(?:^|\s)(?:eller|el|og|samt|or|and)\s|,", phrase, maxsplit=1)[0]
+    found = _FLAVOUR.search(phrase) or _FLAVOUR_BEFORE.search(t[:mention.start()])
+    return found.group(1) if found else None
+
+
+def _untied_flavour(t, maxes):
+    """A flavour word in a clause that names no Pepsi Max, or None.
+
+    "Pepsi Max eller Faxe Kondi. Flere varianter. Fx lime." can mean "for example lime",
+    so the row may be Pepsi Max Lime. A flavour in the same clause as a Pepsi Max mention
+    ("... Faxe Kondi med citron") belongs to the product named there and does not count.
+    """
+    segments, start = [], 0
+    for m in _PHRASE_END.finditer(t):
+        segments.append((start, m.start()))
+        start = m.end()
+    segments.append((start, len(t)))
+    for first, last in segments:
+        if not any(first <= mm.start() < last for mm in maxes):
+            found = _FLAVOUR.search(t[first:last])
+            if found:
+                return found.group(1)
+    return None
 
 
 def _max_phrase_is_plain(tail):
@@ -55,12 +91,13 @@ def _max_phrase_is_plain(tail):
 # Poetzsch Padborg, fakta Tyskland, Nielsen Scan-Shop, Calle, Fleggaard), so the country
 # field is necessary but not enough. A dealer must also be on this list of chains with
 # shops in Denmark. Unknown dealers are excluded and listed in the report.
-DANISH_CHAINS = frozenset(name.lower() for name in (
+DANISH_CHAIN_NAMES = (
     "Netto", "føtex", "Bilka", "Bilka ToGo", "Salling", "REMA 1000", "Lidl",
     "365discount", "Coop 365", "Kvickly", "SuperBrugsen", "Brugsen", "Dagli'Brugsen",
     "MENY", "SPAR", "Min Købmand", "Løvbjerg", "nemlig.com", "ABC Lavpris", "Let-Køb",
     "Coop.dk",
-))
+)
+DANISH_CHAINS = frozenset(name.lower() for name in DANISH_CHAIN_NAMES)
 
 
 def is_danish_dealer(name, country):
@@ -83,8 +120,15 @@ def classify_product(text, variant=None):
         flavour = _FLAVOUR.search(t + " " + _norm(variant))
         maxes = list(_PEPSI_MAX.finditer(t))
         if maxes:
-            if flavour:
-                return REJECT, None, "flavour named (%s)" % flavour.group(1)
+            named = _FLAVOUR.search(_norm(variant)) or next(
+                (f for f in (_flavour_of_pepsi_max(t, m) for m in maxes) if f), None)
+            if named:
+                return REJECT, None, "flavour named (%s)" % (
+                    named if isinstance(named, str) else named.group(1))
+            untied = _untied_flavour(t, maxes)
+            if untied:
+                return QUARANTINE, PEPSI_MAX, (
+                    "flavour word (%s) in a later clause that names no product" % untied)
             tails = [t[m.end():] for m in maxes]
             if variant:
                 tails = [tail + " " + _norm(variant) for tail in tails]
@@ -128,9 +172,10 @@ def load_known_ids(path):
             raise ValueError("%s: %s ids listed under both products: %s"
                              % (path, source, ", ".join(sorted(both))))
     nemlig = known["nemlig"][PEPSI_MAX] | known["nemlig"][CULT]
-    if len(nemlig) > NEMLIG_MAX_IDS:
-        raise ValueError("%s: %d nemlig ids, more than the cap of %d requests per run"
-                         % (path, len(nemlig), NEMLIG_MAX_IDS))
+    if len(nemlig) * NEMLIG_PASSES > NEMLIG_MAX_IDS:
+        raise ValueError("%s: %d nemlig ids need %d product requests (this week and next), "
+                         "more than the cap of %d requests per run"
+                         % (path, len(nemlig), len(nemlig) * NEMLIG_PASSES, NEMLIG_MAX_IDS))
     return known
 
 

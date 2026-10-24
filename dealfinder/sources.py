@@ -7,15 +7,20 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta
 
 # No e-mail address or other personal data goes in the User-Agent.
 USER_AGENT = "PepsiReport-dealfinder/0.1 (personal weekly price check; low volume)"
 TJEK_URL = "https://api.etilbudsavis.dk/v2/offers/search"
 REMA_URL = "https://api.digital.rema1000.dk/api/v3/products"
 NEMLIG_BASE = "https://www.nemlig.com"
-# Hard cap on nemlig product requests per run (one per id).
+# Hard cap on nemlig product requests per run, counted over every slot pass.
 NEMLIG_MAX_IDS = 25
-TJEK_QUERIES = ("pepsi max", "cult")
+# This week and next week each read every id once; the cap counts both passes.
+NEMLIG_PASSES = 2
+# At most 3 queries x 3 centres x 3 pages = 27 requests; a short page stops a centre early.
+# "pepsi" finds flyer rows that name Pepsi Max only in the text; regular Pepsi is rejected later.
+TJEK_QUERIES = ("pepsi max", "cult", "pepsi")
 # Search centres (lat, lng, radius m) covering Jutland and Funen, Zealand and the
 # islands, and Bornholm. Single-dealer filtering missed rows (finding
 # danish-pepsi-cult-offer-data-sources-tjek-rema-api-october-2026), so search by area.
@@ -140,42 +145,75 @@ def fetch_rema(transport):
     return products, errors
 
 
-def fetch_nemlig(transport, product_ids):
-    """Return (products, errors) from nemlig's guest JSON chain for a fixed list of ids.
+def next_week_slot(slot):
+    """The same weekday and hour one week later, in nemlig's slot format, or None.
+
+    A slot such as "2026102412-120-240" is the date and hour, then two numbers kept as they are.
+    """
+    try:
+        moment = datetime.strptime(slot[:10], "%Y%m%d%H") + timedelta(days=7)
+    except (TypeError, ValueError):
+        return None
+    return moment.strftime("%Y%m%d%H") + slot[10:]
+
+
+def fetch_nemlig_weeks(transport, product_ids, next_week=False):
+    """Return ([(slot text, products), ...], errors) from nemlig's guest JSON chain.
 
     Settings give ProductsImportedTimestamp, the guest basket gives TimeslotUtc and
-    DeliveryZoneId, and each product is then read by id. A block stops the source.
+    DeliveryZoneId, and each product is then read by id for that delivery slot. The slot is
+    part of the URL path, so with next_week the same ids are read once more for the slot one
+    week later (a guest needs no login for that). The first entry is this week. A block
+    stops the source.
     """
-    products, errors = [], []
+    passes, errors = [], []
     if not product_ids:
-        return products, errors
-    if len(product_ids) > NEMLIG_MAX_IDS:
-        raise ValueError("%d nemlig ids, more than the cap of %d; nothing was requested"
-                         % (len(product_ids), NEMLIG_MAX_IDS))
+        return passes, errors
+    wanted = len(product_ids) * (NEMLIG_PASSES if next_week else 1)
+    if wanted > NEMLIG_MAX_IDS:
+        raise ValueError("%d nemlig ids need %d product requests, more than the cap of %d; "
+                         "nothing was requested" % (len(product_ids), wanted, NEMLIG_MAX_IDS))
     try:
         settings = transport.get_json("nemlig", NEMLIG_BASE + "/webapi/v2/AppSettings/Website",
                                       "nemlig_settings.json")
         basket = transport.get_json("nemlig", NEMLIG_BASE + "/webapi/basket/GetBasket",
                                     "nemlig_basket.json")
-        path = "/webapi/%s/%s/%s/0/Products/Get" % tuple(
-            urllib.parse.quote(str(v), safe="") for v in (
-                settings["ProductsImportedTimestamp"], basket["TimeslotUtc"],
-                basket["DeliveryZoneId"]))
+        stamp, slot, zone = (settings["ProductsImportedTimestamp"], basket["TimeslotUtc"],
+                             basket["DeliveryZoneId"])
     except SourceError as e:
-        return products, [("nemlig", str(e))]
+        return passes, [("nemlig", str(e))]
     except (KeyError, TypeError) as e:
-        return products, [("nemlig", "unexpected settings or basket shape: %r" % (e,))]
-    for pid in product_ids:
-        url = NEMLIG_BASE + path + "?" + urllib.parse.urlencode({"id": pid})
-        try:
-            body = transport.get_json("nemlig", url, "nemlig_product_%s.json" % pid)
-        except SourceError as e:
-            errors.append(("nemlig", str(e)))
-            if e.blocked:
-                break
-            continue
-        if not isinstance(body, dict):
-            errors.append(("nemlig", "unexpected product shape for id %s" % pid))
-            continue
-        products.append(body)
-    return products, errors
+        return passes, [("nemlig", "unexpected settings or basket shape: %r" % (e,))]
+    slots = [(slot, "")]
+    if next_week:
+        later = next_week_slot(slot)
+        if later:
+            slots.append((later, "_next"))
+        else:
+            errors.append(("nemlig", "cannot read the timeslot %r, next week skipped" % (slot,)))
+    for use_slot, suffix in slots:
+        path = "/webapi/%s/%s/%s/0/Products/Get" % tuple(
+            urllib.parse.quote(str(v), safe="") for v in (stamp, use_slot, zone))
+        products = []
+        for pid in product_ids:
+            url = NEMLIG_BASE + path + "?" + urllib.parse.urlencode({"id": pid})
+            try:
+                body = transport.get_json("nemlig", url, "nemlig_product_%s%s.json" % (pid, suffix))
+            except SourceError as e:
+                errors.append(("nemlig", str(e)))
+                if e.blocked:
+                    passes.append(("%s, zone %s" % (use_slot, zone), products))
+                    return passes, errors
+                continue
+            if not isinstance(body, dict):
+                errors.append(("nemlig", "unexpected product shape for id %s" % pid))
+                continue
+            products.append(body)
+        passes.append(("%s, zone %s" % (use_slot, zone), products))
+    return passes, errors
+
+
+def fetch_nemlig(transport, product_ids):
+    """Return (products, errors) for this week's nemlig delivery slot only."""
+    passes, errors = fetch_nemlig_weeks(transport, product_ids)
+    return (passes[0][1] if passes else []), errors
