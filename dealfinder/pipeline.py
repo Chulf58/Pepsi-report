@@ -40,11 +40,16 @@ class Outcome:
     expired: int = 0
     unrelated: int = 0
     bottles_dropped: int = 0
+    bottles_by_store: Counter = field(default_factory=Counter)
     out_of_stock: int = 0
     # Confirmed ids per source and product (data/products.json).
     known: dict = field(default_factory=dict)
     # (source, product id, store, text) of listed rows that matched by text, not by id.
     text_matched: list = field(default_factory=list)
+
+    def drop_bottle(self, store):
+        self.bottles_dropped += 1
+        self.bottles_by_store[store] += 1
 
     def reject(self, reason):
         if reason == UNRELATED:
@@ -167,7 +172,7 @@ def _tjek_row(o, today, run_id, outcome):
     units = packs.container_sizes or ([field_unit] if field_unit else [])
     container = container_kind(text, units)
     if container == BOTTLE:
-        outcome.bottles_dropped += 1
+        outcome.drop_bottle(store)
         return
     if status == QUARANTINE:
         quarantine(reason)
@@ -234,7 +239,7 @@ def _rema_price(p, pr, status, product, reason, matched_by, text, packs, today, 
     per_unit = deposit / counts.pop() if _positive(deposit) and len(counts) == 1 else None
     container = container_kind(text, packs.container_sizes, per_unit)
     if container == BOTTLE:
-        outcome.bottles_dropped += 1
+        outcome.drop_bottle("REMA 1000")
         return
     if status == QUARANTINE:
         quarantine(reason)
@@ -335,7 +340,7 @@ def _nemlig_product(p, today, run_id, outcome):
 
     container = container_kind(text, packs.container_sizes)
     if container == BOTTLE:
-        outcome.bottles_dropped += 1
+        outcome.drop_bottle("nemlig.com")
         return
     if status == QUARANTINE:
         quarantine(pid, reason)

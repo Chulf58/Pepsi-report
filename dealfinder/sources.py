@@ -15,7 +15,9 @@ REMA_URL = "https://api.digital.rema1000.dk/api/v3/products"
 NEMLIG_BASE = "https://www.nemlig.com"
 # Hard cap on nemlig product requests per run (one per id).
 NEMLIG_MAX_IDS = 25
-TJEK_QUERIES = ("pepsi max", "cult")
+# At most 3 queries x 3 centres x 3 pages = 27 requests; a short page stops a centre early.
+# "pepsi" finds flyer rows that name Pepsi Max only in the text; regular Pepsi is rejected later.
+TJEK_QUERIES = ("pepsi max", "cult", "pepsi")
 # Search centres (lat, lng, radius m) covering Jutland and Funen, Zealand and the
 # islands, and Bornholm. Single-dealer filtering missed rows (finding
 # danish-pepsi-cult-offer-data-sources-tjek-rema-api-october-2026), so search by area.

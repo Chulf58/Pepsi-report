@@ -24,8 +24,9 @@ def tjek(oid, heading, description, price, store="Netto", run_till="2026-10-29T2
             "dealer": {"name": store, "country": {"id": "DK"}, "website": "https://netto.dk"}}
 
 
-def rema(pid, name, underline, price, deposit, compare, ending="2026-10-31T00:00:00+00:00"):
-    entry = {"price": price, "is_campaign": True, "starting_at": "2026-10-22T00:00:00+00:00",
+def rema(pid, name, underline, price, deposit, compare, ending="2026-10-31T00:00:00+00:00",
+         starting="2026-10-22T00:00:00+00:00"):
+    entry = {"price": price, "is_campaign": True, "starting_at": starting,
              "ending_at": ending, "deposit": deposit, "compare_unit": "ltr",
              "compare_unit_price": compare}
     if ending is None:
@@ -52,10 +53,11 @@ class OfflineRunTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp)
 
-    def fixture(self, tjek_rows, rema_products=()):
+    def fixture(self, tjek_rows, rema_products=(), pepsi_rows=()):
         d = os.path.join(self.tmp, "fx")
         os.makedirs(d, exist_ok=True)
-        for name, rows in (("tjek_pepsi_max.json", tjek_rows), ("tjek_cult.json", [])):
+        for name, rows in (("tjek_pepsi_max.json", tjek_rows), ("tjek_cult.json", []),
+                           ("tjek_pepsi.json", pepsi_rows)):
             with open(os.path.join(d, name), "w", encoding="utf-8") as f:
                 json.dump(rows, f)
         with open(os.path.join(d, "rema_page_1.json"), "w", encoding="utf-8") as f:
@@ -111,7 +113,7 @@ class OfflineRunTest(unittest.TestCase):
         ])
         self.assertIn("Offers kept: Pepsi Max: 8, Cult Energy: 0", summary)
         self.assertIn("Out of stock skipped (nemlig): 1", summary)  # 5061661
-        self.assertIn("Requests: nemlig 5, rema 2, tjek 6", summary)
+        self.assertIn("Requests: nemlig 5, rema 2, tjek 9", summary)
         # Every stored row carries its source product id.
         self.assertTrue(all(r["product_id"] for r in rows))
         campaign = [r for r in rows if r["source_id"] == "5007899@campaign:2026-10-19"][0]
@@ -129,10 +131,16 @@ class OfflineRunTest(unittest.TestCase):
         self.assertEqual(len([r for r in report if r["status"] == "quarantine"]), 2)
         stores = {r["store"] for r in report}
         self.assertFalse(stores & {"Netto", "SuperBrugsen", "Kvickly", "MENY", "BorderShop"})
-        self.assertEqual({r["vs_12w_avg"] for r in report if r["status"] == "offer"},
-                         {"not enough history yet"})
-        kr = [float(r["kr_per_l"]) for r in report if r["status"] == "offer"]
-        self.assertEqual(kr, sorted(kr))
+        # No % before 4 weeks of history; the cell stays blank.
+        self.assertEqual({r["vs_12w_avg"] for r in report if r["status"] == "offer"}, {""})
+        self.assertIn("Pepsi Max not enough history yet", summary)
+        # Each section is sorted by kr/L; REMA's 10.61 offer starts after the run date.
+        for section in ("available", "later"):
+            kr = [float(r["kr_per_l"]) for r in report
+                  if r["status"] == "offer" and r["section"] == section]
+            self.assertEqual(kr, sorted(kr))
+        self.assertEqual([(r["store"], r["kr_per_l"], r["valid_from"]) for r in report
+                          if r["section"] == "later"], [("REMA 1000", "10.61", "2026-10-29")])
         html = self.report_html()
         self.assertIn("Quarantine", html)
         self.assertNotIn('<h2 class="err">Source errors', html)
@@ -165,7 +173,7 @@ class OfflineRunTest(unittest.TestCase):
         self.assertEqual(vs["Netto"], "-5%")  # 9.47
         self.assertEqual(vs["føtex"], "-20%")  # 8.0
         self.assertEqual(vs["SPAR"], "")  # variants row: listed, no %
-        self.assertEqual(vs["Bilka"], "not enough history yet")  # Cult has no history
+        self.assertEqual(vs["Bilka"], "")  # Cult has no history
         offers = [r for r in self.report_rows() if r["status"] == "offer"]
         self.assertEqual([r["store"] for r in offers], ["SPAR", "føtex", "Netto", "Bilka"])
         netto = [r for r in offers if r["store"] == "Netto"][0]
@@ -181,7 +189,7 @@ class OfflineRunTest(unittest.TestCase):
         self.seed([("2026-09-28", "8.5"), ("2026-10-05", "10"), ("2026-10-12", "11")])
         self.run_cli("2026-10-23", fx)
         # Three prior weeks only; this run's own offers do not count.
-        self.assertEqual(set(self.vs().values()) - {""}, {"not enough history yet"})
+        self.assertEqual(set(self.vs().values()), {""})
         # A second run sees the first: Pepsi Max offers 8.5, 10, 11, 9.47, 8.0 -> mean 9.39.
         self.run_cli("2026-10-23", fx)
         vs = self.vs()
@@ -257,7 +265,7 @@ class OfflineRunTest(unittest.TestCase):
     def test_source_error_is_reported_and_sets_exit_status(self):
         partial = os.path.join(self.tmp, "partial")
         os.mkdir(partial)
-        for name in ("tjek_pepsi_max.json", "tjek_cult.json"):
+        for name in ("tjek_pepsi_max.json", "tjek_cult.json", "tjek_pepsi.json"):
             shutil.copy(os.path.join(FIXTURES, name), partial)
         code, summary = self.run_cli("2026-10-23", fixtures=partial)
         self.assertEqual(code, 2)
@@ -267,6 +275,84 @@ class OfflineRunTest(unittest.TestCase):
         self.assertIn("rema_page_1.json", html)
         # Tjek observations are still recorded.
         self.assertTrue(load_history(self.history))
+
+    def test_starts_later_is_split_from_available_now(self):
+        # On 2026-10-24 REMA's offer valid from 2026-10-29 is not for sale yet.
+        products = [rema(211240, "PEPSI MAX", "33 CL. DÅSE", 6.89, 1, 20.88),
+                    rema(211241, "PEPSI MAX", "33 CL. DÅSE", 3.00, 1, 9.09,
+                         starting="2026-10-28T23:00:00+00:00")]
+        fx = self.fixture(SYNTHETIC_TJEK[:2], products)
+        code, summary = self.run_cli("2026-10-24", fx)
+        self.assertEqual(code, 0, summary)
+        offers = [r for r in self.report_rows() if r["status"] == "offer"]
+        later = [r for r in offers if r["section"] == "later"]
+        self.assertEqual([(r["store"], r["valid_from"]) for r in later],
+                         [("REMA 1000", "2026-10-29")])
+        now = [r for r in offers if r["section"] == "available"]
+        self.assertEqual({r["store"] for r in now}, {"Netto", "føtex", "REMA 1000"})
+        self.assertNotIn("2026-10-29", {r["valid_from"] for r in now})
+        # Each section is sorted by kr/L; the cheap later row does not lead the list.
+        kr = [float(r["kr_per_l"]) for r in now]
+        self.assertEqual(kr, sorted(kr))
+        # Section order in the CSV and the HTML.
+        self.assertEqual([r["section"] for r in offers], ["available"] * 3 + ["later"])
+        html = self.report_html()
+        self.assertLess(html.index("<h2>Available now</h2>"), html.index("<h2>Starts later</h2>"))
+        self.assertLess(html.index("<h2>Starts later</h2>"), html.index("<h2>Quarantine</h2>"))
+        later_html = html[html.index("<h2>Starts later</h2>"):html.index("<h2>Coverage</h2>")]
+        self.assertIn("2026-10-29", later_html)
+        self.assertNotIn("føtex", later_html)
+
+    def test_cheapest_current_price_shows_its_end_date(self):
+        code, summary = self.run_cli("2026-10-24", self.fixture(SYNTHETIC_TJEK[:2]))
+        html = self.report_html()
+        # føtex 8.00 kr/L is the cheapest Pepsi Max; its flyer ends on 2026-10-29.
+        self.assertIn("Cheapest now, Pepsi Max: 8.00 kr/L at føtex, valid to 2026-10-29", html)
+
+    def test_pepsi_query_rows_regular_pepsi_rejected_variants_listed(self):
+        pepsi = [tjek("reg", "Pepsi", "24 x 33 cl ds. + pant", 70.0, store="Lidl"),
+                 SYNTHETIC_TJEK[2]]
+        code, summary = self.run_cli("2026-10-24", self.fixture([], pepsi_rows=pepsi))
+        self.assertEqual(code, 0, summary)
+        self.assertIn("Rejected Pepsi/Cult rows: 1 (regular Pepsi, not Pepsi Max: 1)", summary)
+        self.assertIn("Listed as 'variants, Max likely' (not in history): 1", summary)
+        self.assertEqual(load_history(self.history), [])
+        self.assertEqual([r["store"] for r in self.report_rows() if r["status"] == "offer"],
+                         ["SPAR"])
+
+    def test_one_week_of_history_shows_lowest_seen_so_far(self):
+        self.seed([("2026-10-12", "9")])
+        code, summary = self.run_cli("2026-10-24", self.fixture(SYNTHETIC_TJEK[:2]))
+        self.assertIn("Pepsi Max lowest seen so far: 9.00 kr/L (1 week sampled)", summary)
+        self.assertIn("Cult Energy not enough history yet", summary)
+        self.assertEqual(set(self.vs().values()), {""})
+
+    def test_coverage_lists_chains_and_flags_unseen_ones(self):
+        rows = SYNTHETIC_TJEK[:4] + [
+            tjek("q", "Pepsi Max Xtreme Edition", "6 x 33 cl ds", 15.84, store="Netto")]
+        code, summary = self.run_cli("2026-10-24", self.fixture(rows))
+        self.assertIn("Coverage: 3 of 21 chains seen; not seen this run: ", summary)
+        html = self.report_html()
+        cov = html[html.index("<h2>Coverage</h2>"):]
+        cov = cov[:cov.index("<h2>Quarantine</h2>")]
+        # Netto: a, the bottle and the quarantined Xtreme row; føtex: b; SPAR: the variant.
+        self.assertIn("<td>Netto</td>" + '<td class="num">1</td>' * 1 + '<td class="num">0</td>'
+                      '<td class="num">1</td><td class="num">1</td>', cov)
+        self.assertIn("<td>Lidl</td><td colspan=\"4\" class=\"muted\">not seen this run</td>", cov)
+        self.assertNotIn("<td>Netto</td><td colspan", cov)
+        self.assertLess(html.index("<h2>Coverage</h2>"), html.index("<h2>Quarantine</h2>"))
+
+    def test_source_errors_stay_out_of_coverage(self):
+        partial = os.path.join(self.tmp, "partial")
+        os.mkdir(partial)
+        for name in ("tjek_pepsi_max.json", "tjek_cult.json", "tjek_pepsi.json"):
+            shutil.copy(os.path.join(FIXTURES, name), partial)
+        code, summary = self.run_cli("2026-10-24", fixtures=partial)
+        self.assertEqual(code, 2)
+        coverage = [l for l in summary.splitlines() if l.startswith("Coverage:")]
+        self.assertEqual(len(coverage), 1)
+        self.assertNotIn("rema_page", coverage[0])
+        self.assertEqual(len([l for l in summary.splitlines() if l.startswith("Source errors:")]), 1)
 
 
 if __name__ == "__main__":

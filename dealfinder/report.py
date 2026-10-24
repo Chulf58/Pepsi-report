@@ -3,28 +3,72 @@
 import csv
 import os
 import re
+from collections import Counter
 from html import escape
 
-CSV_HEADER = ["status", "product", "note", "store", "pack", "price_dkk", "kr_per_l",
+from .match import DANISH_CHAIN_NAMES
+
+CSV_HEADER = ["status", "section", "product", "note", "store", "pack", "price_dkk", "kr_per_l",
               "vs_12w_avg", "avg_12w", "low_12w", "valid_from", "valid_to", "campaign",
               "source", "description", "url", "reason"]
 # Values this program computes itself ("-12%"); they never carry a formula.
 _COMPUTED = frozenset(("vs_12w_avg",))
 
 
-def rows_for(listed, quarantined):
+AVAILABLE, LATER = "available", "later"
+SECTION_TITLES = ((AVAILABLE, "Available now"), (LATER, "Starts later"))
+NOT_SEEN = "not seen this run"
+
+
+def split_listed(listed, today):
+    """(available now, starts later), each sorted by kr/L; today is the run date in Danish time."""
+    def by_price(t):
+        return (t[0].kr_per_l, t[0].product)
+    now = today.isoformat()
+    available = sorted((t for t in listed if t[0].valid_from <= now), key=by_price)
+    later = sorted((t for t in listed if t[0].valid_from > now), key=by_price)
+    return available, later
+
+
+def coverage_rows(outcome):
+    """Per chain: rows accepted, variants, quarantined and bottles dropped.
+
+    Every allowlisted chain gets a row, so a chain with no row at all can be reported as
+    not seen. Chains outside the list (not expected) follow, so no count is lost.
+    """
+    counters = {"accepted": Counter(o.store.lower() for o in outcome.observations),
+                "variants": Counter(o.store.lower() for o in outcome.variants),
+                "quarantined": Counter(q.store.lower() for q in outcome.quarantined),
+                "bottles": Counter({k.lower(): v for k, v in outcome.bottles_by_store.items()})}
+    names = {n.lower(): n for n in DANISH_CHAIN_NAMES}
+    for c in counters.values():
+        for key in c:
+            names.setdefault(key, key)
     rows = []
-    for o, vs, base, note in listed:
-        rows.append({"status": "offer", "product": o.product, "note": note, "store": o.store,
-                     "pack": o.pack, "price_dkk": o.price_dkk, "kr_per_l": o.kr_per_l,
-                     "vs_12w_avg": vs, "avg_12w": base.average if base else "",
-                     "low_12w": base.low if base else "", "valid_from": o.valid_from,
-                     "valid_to": o.valid_to, "campaign": "yes" if o.campaign else "no",
-                     "source": o.source, "description": o.description, "url": o.url,
-                     "reason": ""})
+    for key, name in names.items():
+        row = {"chain": name, **{k: c[key] for k, c in counters.items()}}
+        row["seen"] = any(row[k] for k in counters)
+        rows.append(row)
+    return rows
+
+
+def _offer_rows(section, group):
+    return [{"status": "offer", "section": section, "product": o.product, "note": note,
+             "store": o.store, "pack": o.pack, "price_dkk": o.price_dkk, "kr_per_l": o.kr_per_l,
+             "vs_12w_avg": vs, "avg_12w": base.average if base else "",
+             "low_12w": base.low if base else "", "valid_from": o.valid_from,
+             "valid_to": o.valid_to, "campaign": "yes" if o.campaign else "no",
+             "source": o.source, "description": o.description, "url": o.url, "reason": ""}
+            for o, vs, base, note in group]
+
+
+def rows_for(listed, quarantined, today):
+    available, later = split_listed(listed, today)
+    rows = _offer_rows(AVAILABLE, available) + _offer_rows(LATER, later)
     for q in quarantined:
-        rows.append({"status": "quarantine", "product": q.product, "note": "", "store": q.store,
-                     "pack": "", "price_dkk": q.price_dkk if q.price_dkk is not None else "",
+        rows.append({"status": "quarantine", "section": "", "product": q.product, "note": "",
+                     "store": q.store, "pack": "",
+                     "price_dkk": q.price_dkk if q.price_dkk is not None else "",
                      "kr_per_l": "", "vs_12w_avg": "", "avg_12w": "", "low_12w": "",
                      "valid_from": q.valid_from, "valid_to": q.valid_to, "campaign": "",
                      "source": q.source, "description": q.description, "url": q.url,
@@ -99,8 +143,63 @@ document.querySelectorAll('table.sortable').forEach(function (table) {
 """
 
 
-def write_html(path, run_id, listed, quarantined, errors, summary_lines, text_matched=()):
-    offers = sorted(listed, key=lambda t: (t[0].kr_per_l, t[0].product))
+def _offers_table(rows):
+    out = ["<div class=\"wrap\"><table class=\"sortable\"><thead><tr>"
+           "<th>Product</th><th>Store</th><th>Pack</th><th>Price (kr)</th><th>kr/L</th>"
+           "<th>vs 12-wk avg</th><th>12-wk low</th><th>Valid from</th><th>Valid to</th>"
+           "<th>Link</th></tr></thead><tbody>"]
+    for o, vs, base, note in rows:
+        pct_sort = vs.rstrip("%") if vs.rstrip("%").lstrip("+-").isdigit() else "9999"
+        out.append("<tr>" + "".join([
+            _cell(escape(o.product)
+                  + (' <span class="note">(%s)</span>' % escape(note) if note else "")
+                  + '<br><span class="muted">%s</span>' % escape(o.description)),
+            _cell(escape(o.store) + ("" if o.campaign else ' <span class="muted">(shelf price)</span>')),
+            _cell(escape(o.pack)),
+            '<td class="num" data-sort="%s">%.2f</td>' % (o.price_dkk, o.price_dkk),
+            '<td class="num" data-sort="%s">%.2f</td>' % (o.kr_per_l, o.kr_per_l),
+            '<td class="num" data-sort="%s">%s</td>' % (pct_sort, escape(vs)),
+            '<td class="num">%s</td>' % ("%.2f" % base.low if base else ""),
+            _cell(escape(o.valid_from)), _cell(escape(o.valid_to)), _cell(link_html(o.url)),
+        ]) + "</tr>")
+    out.append("</tbody></table></div>")
+    return out
+
+
+def _cheapest_now(available):
+    """One line per product: the cheapest confirmed current price and when it ends."""
+    lines = []
+    for product in sorted({t[0].product for t in available}):
+        # Variant rows are not confirmed Max, so they never stand as the cheapest price.
+        rows = [t[0] for t in available if t[0].product == product and not t[3]]
+        if rows:
+            o = min(rows, key=lambda o: o.kr_per_l)
+            lines.append("Cheapest now, %s: %.2f kr/L at %s, %s" % (
+                product, o.kr_per_l, o.store,
+                "valid to %s" % o.valid_to if o.valid_to else "no end date given"))
+    return lines
+
+
+def _coverage_table(coverage):
+    out = ["<div class=\"wrap\"><table class=\"sortable\"><thead><tr><th>Chain</th>"
+           "<th>Accepted</th><th>Variants</th><th>Quarantined</th><th>Bottles dropped</th>"
+           "</tr></thead><tbody>"]
+    for c in coverage:
+        if c["seen"]:
+            cells = [_cell(escape(c["chain"]))] + [
+                '<td class="num">%d</td>' % c[k]
+                for k in ("accepted", "variants", "quarantined", "bottles")]
+        else:
+            cells = [_cell(escape(c["chain"])),
+                     '<td colspan="4" class="muted">%s</td>' % NOT_SEEN]
+        out.append("<tr>" + "".join(cells) + "</tr>")
+    out.append("</tbody></table></div>")
+    return out
+
+
+def write_html(path, run_id, listed, quarantined, errors, summary_lines, text_matched=(),
+               today=None, coverage=()):
+    available, later = split_listed(listed, today)
     out = ["<!doctype html><html lang=\"da\"><head><meta charset=\"utf-8\">",
            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
            "<title>Pepsi Max og Cult priser</title><style>%s</style></head><body>" % STYLE,
@@ -115,29 +214,14 @@ def write_html(path, run_id, listed, quarantined, errors, summary_lines, text_ma
         out += ["<li>%s: %s</li>" % (escape(s), escape(m)) for s, m in errors]
         out.append("</ul><p>Offers from a failed source are missing from this report.</p>")
     out.append("<ul>%s</ul>" % "".join("<li>%s</li>" % escape(line) for line in summary_lines))
-    out.append("<h2>Offers</h2>")
-    if offers:
-        out.append("<div class=\"wrap\"><table class=\"sortable\"><thead><tr>"
-                   "<th>Product</th><th>Store</th><th>Pack</th><th>Price (kr)</th><th>kr/L</th>"
-                   "<th>vs 12-wk avg</th><th>12-wk low</th><th>Valid from</th><th>Valid to</th>"
-                   "<th>Link</th></tr></thead><tbody>")
-        for o, vs, base, note in offers:
-            pct_sort = vs.rstrip("%") if vs.rstrip("%").lstrip("+-").isdigit() else "9999"
-            out.append("<tr>" + "".join([
-                _cell(escape(o.product)
-                      + (' <span class="note">(%s)</span>' % escape(note) if note else "")
-                      + '<br><span class="muted">%s</span>' % escape(o.description)),
-                _cell(escape(o.store) + ("" if o.campaign else ' <span class="muted">(shelf price)</span>')),
-                _cell(escape(o.pack)),
-                '<td class="num" data-sort="%s">%.2f</td>' % (o.price_dkk, o.price_dkk),
-                '<td class="num" data-sort="%s">%.2f</td>' % (o.kr_per_l, o.kr_per_l),
-                '<td class="num" data-sort="%s">%s</td>' % (pct_sort, escape(vs)),
-                '<td class="num">%s</td>' % ("%.2f" % base.low if base else ""),
-                _cell(escape(o.valid_from)), _cell(escape(o.valid_to)), _cell(link_html(o.url)),
-            ]) + "</tr>")
-        out.append("</tbody></table></div>")
-    else:
-        out.append("<p>No offers this run.</p>")
+    for (_, title), rows in zip(SECTION_TITLES, (available, later)):
+        out.append("<h2>%s</h2>" % title)
+        if rows is available and rows:
+            out += ["<p>%s</p>" % escape(line) for line in _cheapest_now(available)]
+        out += _offers_table(rows) if rows else ["<p>None.</p>"]
+    out.append("<h2>Coverage</h2><p class=\"muted\">Rows per chain this run. Source errors are "
+               "listed separately above.</p>")
+    out += _coverage_table(coverage)
     out.append("<h2>Quarantine</h2><p class=\"muted\">Rows that look relevant but could not be "
                "read safely. They are not used in the price history.</p>")
     if quarantined:
@@ -169,11 +253,12 @@ def write_html(path, run_id, listed, quarantined, errors, summary_lines, text_ma
         f.write("\n".join(out))
 
 
-def write_reports(out_dir, run_id, listed, quarantined, errors, summary_lines, text_matched=()):
+def write_reports(out_dir, run_id, listed, quarantined, errors, summary_lines, text_matched=(),
+                  *, today, coverage=()):
     os.makedirs(out_dir, exist_ok=True)
     html_path = os.path.join(out_dir, "report.html")
     csv_path = os.path.join(out_dir, "report.csv")
-    listed = sorted(listed, key=lambda t: (t[0].kr_per_l, t[0].product))
-    write_html(html_path, run_id, listed, quarantined, errors, summary_lines, text_matched)
-    write_csv(csv_path, rows_for(listed, quarantined))
+    write_html(html_path, run_id, listed, quarantined, errors, summary_lines, text_matched,
+               today, coverage)
+    write_csv(csv_path, rows_for(listed, quarantined, today))
     return html_path, csv_path

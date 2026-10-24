@@ -6,11 +6,12 @@ import sys
 from collections import Counter
 from datetime import date, datetime, timezone
 
-from .history import NOT_ENOUGH, append_history, baseline, load_history, percent_vs
+from .history import (NOT_ENOUGH, append_history, baseline, load_history, lowest_seen_text,
+                      percent_vs)
 from .match import CULT, PEPSI_MAX, VARIANTS_NOTE, load_known_ids
 from .parse import TZ_NOTE, copenhagen_date
 from .pipeline import build
-from .report import write_reports
+from .report import NOT_SEEN, coverage_rows, write_reports
 from .sources import FixtureTransport, HttpTransport, fetch_nemlig, fetch_rema, fetch_tjek
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,6 +49,7 @@ def main(argv=None):
     nemlig_ids = sorted(set().union(*known["nemlig"].values()))
     nemlig_products, nemlig_errors = fetch_nemlig(transport, nemlig_ids)
     outcome = build(tjek_offers, rema_products, today, run_id, nemlig_products, known)
+    coverage = coverage_rows(outcome)
     errors = tjek_errors + rema_errors + nemlig_errors + outcome.row_errors
 
     prior = load_history(args.history)
@@ -55,7 +57,14 @@ def main(argv=None):
 
     def vs(o):
         base = bases.get(o.product)
-        return percent_vs(o.kr_per_l, base) if base else NOT_ENOUGH
+        # No % until 4 weeks of history exist; the summary says what is known instead.
+        return percent_vs(o.kr_per_l, base) if base else ""
+
+    def history_text(product, base):
+        if base:
+            return "%s %.2f kr/L (low %.2f, %d offers, %d weeks)" % (
+                product, base.average, base.low, base.offers, base.weeks)
+        return "%s %s" % (product, lowest_seen_text(prior, product, run_id, today) or NOT_ENOUGH)
 
     # Variant rows are not confirmed Pepsi Max, so they get no % (ruling
     # pepsi-flere-varianter-rows-listed-probably-max-not-in-history).
@@ -72,10 +81,10 @@ def main(argv=None):
         "Bottles dropped: %d" % outcome.bottles_dropped,
         "Out of stock skipped (nemlig): %d" % outcome.out_of_stock,
         "Matched by text, not by a confirmed id: %d" % len(outcome.text_matched),
-        "12-week average: %s" % "; ".join(
-            "%s %.2f kr/L (low %.2f, %d offers, %d weeks)"
-            % (p, b.average, b.low, b.offers, b.weeks) if b else "%s %s" % (p, NOT_ENOUGH)
-            for p, b in bases.items()),
+        "12-week average: %s" % "; ".join(history_text(p, b) for p, b in bases.items()),
+        "Coverage: %d of %d chains seen; %s: %s" % (
+            sum(c["seen"] for c in coverage), len(coverage), NOT_SEEN,
+            ", ".join(c["chain"] for c in coverage if not c["seen"]) or "none"),
         "Quarantined: %d%s" % (len(outcome.quarantined), " (%s)" % ", ".join(
             "%s: %d" % kv for kv in sorted(q_product.items())) if q_product else ""),
         "Rejected Pepsi/Cult rows: %d (%s)" % (sum(outcome.rejected.values()), "; ".join(
@@ -90,7 +99,8 @@ def main(argv=None):
     if TZ_NOTE:
         lines.append("Degraded: " + TZ_NOTE)
     html_path, csv_path = write_reports(args.out, run_id, listed, outcome.quarantined,
-                                        errors, lines, outcome.text_matched)
+                                        errors, lines, outcome.text_matched,
+                                        today=today, coverage=coverage)
     print("Deal finder run %s%s" % (run_id, " (offline)" if args.offline else ""))
     for line in lines:
         print(line)

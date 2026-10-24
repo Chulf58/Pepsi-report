@@ -3,7 +3,8 @@
 Ruling report-price-list-with-percent-vs-12-week-average-no-labels: per product, the
 12-week average is the mean kr/L over the distinct offers (source plus offer id) stored
 in the 12 weeks before the run, the current run left out. With fewer than 4 distinct
-weeks of history there is no comparison ("not enough history yet").
+weeks of history there is no comparison; the report then shows the lowest price seen so far
+and how many weeks that covers.
 """
 
 import csv
@@ -88,11 +89,12 @@ class Baseline:
     weeks: int
 
 
-def baseline(rows, product, run_id, run_date):
-    """The 12-week average and low for product, or None with under 4 weeks of history."""
+def _window(rows, product, run_id, run_date):
+    """(latest kr/L per distinct offer, lowest kr/L over every observation, weeks) in the window."""
     start = run_date - timedelta(weeks=WINDOW_WEEKS)
     offers = {}
     weeks = set()
+    low = None
     for r in rows:
         if r["product"] != product or r["run_id"] == run_id:
             continue
@@ -100,12 +102,29 @@ def baseline(rows, product, run_id, run_date):
         if not start < day <= run_date:
             continue
         weeks.add(day.isocalendar()[:2])
-        # An offer seen in several runs counts once; the latest stored price wins.
-        offers[(r.get("source") or "", r.get("source_id") or "")] = float(r["kr_per_l"])
+        kr = float(r["kr_per_l"])
+        # An offer seen in several runs counts once in the average, at its latest stored
+        # price; the low looks at every stored price, so a later higher one cannot hide it.
+        offers[(r.get("source") or "", r.get("source_id") or "")] = kr
+        low = kr if low is None else min(low, kr)
+    return offers, low, weeks
+
+
+def baseline(rows, product, run_id, run_date):
+    """The 12-week average and low for product, or None with under 4 weeks of history."""
+    offers, low, weeks = _window(rows, product, run_id, run_date)
     if len(weeks) < MIN_WEEKS:
         return None
-    prices = list(offers.values())
-    return Baseline(round(statistics.fmean(prices), 2), min(prices), len(prices), len(weeks))
+    return Baseline(round(statistics.fmean(offers.values()), 2), low, len(offers), len(weeks))
+
+
+def lowest_seen_text(rows, product, run_id, run_date):
+    """'lowest seen so far: 8.00 kr/L (1 week sampled)', or None when no week is stored yet."""
+    _, low, weeks = _window(rows, product, run_id, run_date)
+    if not weeks:
+        return None
+    n = len(weeks)
+    return "lowest seen so far: %.2f kr/L (%d %s sampled)" % (low, n, "week" if n == 1 else "weeks")
 
 
 def percent_vs(kr_per_l, base):

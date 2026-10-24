@@ -55,12 +55,13 @@ def _max_phrase_is_plain(tail):
 # Poetzsch Padborg, fakta Tyskland, Nielsen Scan-Shop, Calle, Fleggaard), so the country
 # field is necessary but not enough. A dealer must also be on this list of chains with
 # shops in Denmark. Unknown dealers are excluded and listed in the report.
-DANISH_CHAINS = frozenset(name.lower() for name in (
+DANISH_CHAIN_NAMES = (
     "Netto", "føtex", "Bilka", "Bilka ToGo", "Salling", "REMA 1000", "Lidl",
     "365discount", "Coop 365", "Kvickly", "SuperBrugsen", "Brugsen", "Dagli'Brugsen",
     "MENY", "SPAR", "Min Købmand", "Løvbjerg", "nemlig.com", "ABC Lavpris", "Let-Køb",
     "Coop.dk",
-))
+)
+DANISH_CHAINS = frozenset(name.lower() for name in DANISH_CHAIN_NAMES)
 
 
 def is_danish_dealer(name, country):

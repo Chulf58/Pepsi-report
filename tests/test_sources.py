@@ -32,8 +32,34 @@ class TjekBlockTest(unittest.TestCase):
     def test_other_errors_are_reported_per_request_without_retry(self):
         stub = StubTransport(SourceError("request failed"))
         offers, errors = fetch_tjek(stub)
-        self.assertEqual(stub.calls, 6)  # 2 queries x 3 centres, one attempt each
-        self.assertEqual(len(errors), 6)
+        self.assertEqual(stub.calls, 9)  # 3 queries x 3 centres, one attempt each
+        self.assertEqual(len(errors), 9)
+
+    def test_request_count_is_capped_at_27(self):
+        class Full:
+            fixtures, calls = [], 0
+
+            def get_json(self, source, url, fixture):
+                self.calls += 1
+                self.fixtures.append(fixture)
+                return [{"id": "x%d" % self.calls}] * 100
+        full = Full()
+        offers, errors = fetch_tjek(full)
+        self.assertEqual(full.calls, 27)  # 3 queries x 3 centres x 3 pages, no early stop
+        self.assertEqual(sorted(set(full.fixtures)),
+                         ["tjek_cult.json", "tjek_pepsi.json", "tjek_pepsi_max.json"])
+        self.assertEqual(len(errors), 9)
+
+    def test_short_page_stops_early_for_each_query_and_centre(self):
+        class Short:
+            calls = 0
+
+            def get_json(self, source, url, fixture):
+                self.calls += 1
+                return [{"id": "x"}]
+        short = Short()
+        offers, errors = fetch_tjek(short)
+        self.assertEqual((short.calls, errors), (9, []))
 
     def test_user_agent_has_no_personal_data(self):
         self.assertNotRegex(USER_AGENT, r"@|mailto:")
