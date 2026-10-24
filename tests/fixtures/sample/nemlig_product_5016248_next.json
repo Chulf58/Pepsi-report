@@ -3,15 +3,25 @@
  "Name": "Pepsi Max (dåse)",
  "Brand": "Pepsi",
  "Description": "24 x 0,33 l / ex. pant / indh. sødestoffer / Pepsi",
- "Price": 123.75,
- "UnitPrice": "5,15 kr./Stk.",
- "UnitPriceCalc": 5.16,
+ "Price": 98.0,
+ "UnitPrice": "4,08 kr./Stk.",
+ "UnitPriceCalc": 4.08,
  "UnitPriceLabel": "kr./Stk.",
  "DiscountItem": false,
  "Labels": [
   "Sukkerfri"
  ],
- "Campaign": null,
+ "Campaign": {
+  "DiscountSavings": 16.0,
+  "MaxQuantity": 0,
+  "CampaignPrice": 82.0,
+  "CampaignUnitPrice": 3.42,
+  "Type": "ProductCampaignDiscount",
+  "Code": "P",
+  "IntervalStart": "2026-10-25T23:00:00Z",
+  "IntervalEnd": "2026-11-01T22:59:59Z",
+  "ShowCampaignInterval": true
+ },
  "Availability": {
   "IsDeliveryAvailable": true,
   "IsAvailableInStock": true,
