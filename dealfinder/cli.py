@@ -6,13 +6,14 @@ import sys
 from collections import Counter
 from datetime import date, datetime, timezone
 
+from .flags import flag_reason, flagged_offers, load_limits, toast_text
 from .history import (NOT_ENOUGH, append_history, baseline, load_history, lowest_seen_text,
-                      percent_vs)
+                      percent_vs, week_labels, weekly_lows)
 from .match import CULT, PEPSI_MAX, VARIANTS_NOTE, load_known_ids
 from .parse import TZ_NOTE, copenhagen_date
-from .pipeline import build
-from .report import NOT_SEEN, coverage_rows, write_reports
-from .sources import FixtureTransport, HttpTransport, fetch_nemlig, fetch_rema, fetch_tjek
+from .pipeline import UPCOMING_NOTE, build
+from .report import NOT_SEEN, Extras, age_lines, coverage_rows, write_reports
+from .sources import FixtureTransport, HttpTransport, fetch_nemlig_weeks, fetch_rema, fetch_tjek
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXIT_SOURCE_ERROR = 2
@@ -27,15 +28,22 @@ def parse_args(argv):
     p.add_argument("--out", default=os.path.join(ROOT, "out"))
     p.add_argument("--products", default=os.path.join(ROOT, "data", "products.json"),
                    help="confirmed product ids per source (also nemlig's fetch list)")
+    p.add_argument("--report-md", metavar="PATH",
+                   help="where to write the phone report (default: REPORT.md at the repo root; "
+                        "none with --offline)")
     p.add_argument("--today", type=date.fromisoformat,
                    help="run date YYYY-MM-DD (default: today in Denmark)")
-    return p.parse_args(argv)
+    args = p.parse_args(argv)
+    if args.report_md is None and not args.offline:
+        args.report_md = os.path.join(ROOT, "REPORT.md")
+    return args
 
 
 def main(argv=None):
     args = parse_args(argv)
     try:
         known = load_known_ids(args.products)
+        limits = load_limits(args.products)
     except (OSError, ValueError) as e:
         print("Cannot read product id list %s: %s" % (args.products, e), file=sys.stderr)
         return 1
@@ -47,8 +55,11 @@ def main(argv=None):
     tjek_offers, tjek_errors = fetch_tjek(transport)
     rema_products, rema_errors = fetch_rema(transport)
     nemlig_ids = sorted(set().union(*known["nemlig"].values()))
-    nemlig_products, nemlig_errors = fetch_nemlig(transport, nemlig_ids)
-    outcome = build(tjek_offers, rema_products, today, run_id, nemlig_products, known)
+    nemlig_passes, nemlig_errors = fetch_nemlig_weeks(transport, nemlig_ids, next_week=True)
+    (this_slot, nemlig_products), (next_slot, nemlig_next) = (
+        (nemlig_passes + [("", [])] * 2)[:2])
+    outcome = build(tjek_offers, rema_products, today, run_id, nemlig_products, known,
+                    this_slot, nemlig_next, next_slot)
     coverage = coverage_rows(outcome)
     errors = tjek_errors + rema_errors + nemlig_errors + outcome.row_errors
 
@@ -68,16 +79,25 @@ def main(argv=None):
 
     # Variant rows are not confirmed Pepsi Max, so they get no % (ruling
     # pepsi-flere-varianter-rows-listed-probably-max-not-in-history).
-    listed = [(o, vs(o), bases.get(o.product), "") for o in outcome.observations]
-    listed += [(o, "", bases.get(o.product), VARIANTS_NOTE) for o in outcome.variants]
+    rows = [(o, vs(o), bases.get(o.product), "") for o in outcome.observations]
+    rows += [(o, "", bases.get(o.product), VARIANTS_NOTE) for o in outcome.variants]
+    rows += [(o, vs(o), bases.get(o.product), UPCOMING_NOTE) for o in outcome.upcoming]
+    listed = [(o, v, b, n, flag_reason(o, n, b, limits, today)) for o, v, b, n in rows]
+    flagged = flagged_offers(listed)
+    toast = toast_text(flagged)
     # History is written before the report, so a report never shows prices it did not keep.
     append_history(args.history, outcome.observations)
+    last_success = today.isoformat() if not errors else max(
+        (r["run_date"] for r in prior if r["run_id"] != run_id), default="")
+    extras = Extras(coverage, weekly_lows(load_history(args.history), today),
+                    week_labels(today), last_success, toast)
 
     per_product = Counter(o.product for o in outcome.observations)
     q_product = Counter(q.product or "unknown" for q in outcome.quarantined)
     lines = [
         "Offers kept: %s" % ", ".join("%s: %d" % (p, per_product[p]) for p in (PEPSI_MAX, CULT)),
         "Listed as '%s' (not in history): %d" % (VARIANTS_NOTE, len(outcome.variants)),
+        "Next week's nemlig prices listed (not in history): %d" % len(outcome.upcoming),
         "Bottles dropped: %d" % outcome.bottles_dropped,
         "Out of stock skipped (nemlig): %d" % outcome.out_of_stock,
         "Matched by text, not by a confirmed id: %d" % len(outcome.text_matched),
@@ -85,6 +105,9 @@ def main(argv=None):
         "Coverage: %d of %d chains seen; %s: %s" % (
             sum(c["seen"] for c in coverage), len(coverage), NOT_SEEN,
             ", ".join(c["chain"] for c in coverage if not c["seen"]) or "none"),
+        "Good offers: %d" % len(flagged),
+        "Notification: %s" % toast,
+        *age_lines(extras, today),
         "Quarantined: %d%s" % (len(outcome.quarantined), " (%s)" % ", ".join(
             "%s: %d" % kv for kv in sorted(q_product.items())) if q_product else ""),
         "Rejected Pepsi/Cult rows: %d (%s)" % (sum(outcome.rejected.values()), "; ".join(
@@ -100,7 +123,8 @@ def main(argv=None):
         lines.append("Degraded: " + TZ_NOTE)
     html_path, csv_path = write_reports(args.out, run_id, listed, outcome.quarantined,
                                         errors, lines, outcome.text_matched,
-                                        today=today, coverage=coverage)
+                                        today=today, extras=extras,
+                                        report_md=args.report_md)
     print("Deal finder run %s%s" % (run_id, " (offline)" if args.offline else ""))
     for line in lines:
         print(line)

@@ -22,6 +22,7 @@ FLAVOURS = (
     "blåbær", "strawberry", "jordbær", "ananas", "pineapple", "twist", "mojito",
 )
 _FLAVOUR = re.compile(r"\b(%s)\b" % "|".join(FLAVOURS))
+_FLAVOUR_BEFORE = re.compile(r"\b(%s)\s+$" % "|".join(FLAVOURS))
 _PEPSI_MAX = re.compile(r"\bpepsi[\s-]*max\b")
 _SEVERAL = re.compile(r"flere varianter|udvalgte varianter|alle varianter|frit valg")
 # What may follow "Pepsi Max" in a plain row, up to the end of that phrase: sizes, pack
@@ -34,6 +35,21 @@ _PACK_WORDS = frozenset((
 ))
 _CONNECTORS = frozenset(("eller", "el", "og", "samt", "or", "and", ","))
 _PHRASE_END = re.compile(r"\n|[|;!]|\.(\s|$)")
+
+
+def _flavour_of_pepsi_max(t, mention):
+    """The flavour word that belongs to one 'Pepsi Max' mention, or None.
+
+    Only the Pepsi phrase counts: the words up to the first connector or phrase end, and a
+    flavour word directly in front. "Pepsi Max eller Faxe Kondi med citron" names a flavour
+    for Faxe Kondi, not for Pepsi Max; "Pepsi Max Lime" is flavoured.
+    """
+    tail = t[mention.end():]
+    end = _PHRASE_END.search(tail)
+    phrase = tail[:end.start()] if end else tail
+    phrase = re.split(r"(?:^|\s)(?:eller|el|og|samt|or|and)\s|,", phrase, maxsplit=1)[0]
+    found = _FLAVOUR.search(phrase) or _FLAVOUR_BEFORE.search(t[:mention.start()])
+    return found.group(1) if found else None
 
 
 def _max_phrase_is_plain(tail):
@@ -84,8 +100,11 @@ def classify_product(text, variant=None):
         flavour = _FLAVOUR.search(t + " " + _norm(variant))
         maxes = list(_PEPSI_MAX.finditer(t))
         if maxes:
-            if flavour:
-                return REJECT, None, "flavour named (%s)" % flavour.group(1)
+            named = _FLAVOUR.search(_norm(variant)) or next(
+                (f for f in (_flavour_of_pepsi_max(t, m) for m in maxes) if f), None)
+            if named:
+                return REJECT, None, "flavour named (%s)" % (
+                    named if isinstance(named, str) else named.group(1))
             tails = [t[m.end():] for m in maxes]
             if variant:
                 tails = [tail + " " + _norm(variant) for tail in tails]

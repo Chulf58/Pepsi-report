@@ -9,7 +9,7 @@ from dealfinder.match import load_known_ids
 from dealfinder.pipeline import Outcome, normalize_nemlig, normalize_rema, normalize_tjek
 from dealfinder.report import csv_safe, link_html
 from dealfinder.sources import (NEMLIG_MAX_IDS, USER_AGENT, SourceError, fetch_nemlig,
-                                fetch_rema, fetch_tjek)
+                                fetch_nemlig_weeks, fetch_rema, fetch_tjek, next_week_slot)
 
 
 class StubTransport:
@@ -100,6 +100,41 @@ def offer(description, price, heading="Pepsi Max"):
             "run_from": "2026-10-22T22:00:00+0000", "run_till": "2026-10-29T22:59:59+0000",
             "links": {"webshop": None},
             "dealer": {"name": "Netto", "country": {"id": "DK"}, "website": "https://netto.dk"}}
+
+
+class NemligNextWeekTest(unittest.TestCase):
+    class Seq:
+        def __init__(self):
+            self.urls = []
+
+        def get_json(self, source, url, fixture):
+            self.urls.append((url, fixture))
+            if fixture == "nemlig_settings.json":
+                return {"ProductsImportedTimestamp": "T"}
+            if fixture == "nemlig_basket.json":
+                return {"TimeslotUtc": "2026102414-60-240", "DeliveryZoneId": 1}
+            return {"Id": fixture}
+
+    def test_next_slot_is_one_week_later(self):
+        self.assertEqual(next_week_slot("2026102414-60-240"), "2026103114-60-240")
+        self.assertEqual(next_week_slot("2026122818-60-240"), "2027010418-60-240")
+        self.assertIsNone(next_week_slot("garbage"))
+
+    def test_second_pass_reads_the_later_slot_in_the_path(self):
+        seq = self.Seq()
+        passes, errors = fetch_nemlig_weeks(seq, ["1", "2"], next_week=True)
+        self.assertEqual(errors, [])
+        self.assertEqual([slot for slot, _ in passes],
+                         ["2026102414-60-240, zone 1", "2026103114-60-240, zone 1"])
+        self.assertEqual(len(seq.urls), 2 + 2 + 2)  # settings, basket, two ids per slot
+        self.assertIn("/T/2026102414-60-240/1/0/Products/Get", seq.urls[2][0])
+        self.assertIn("/T/2026103114-60-240/1/0/Products/Get", seq.urls[4][0])
+        self.assertEqual(seq.urls[4][1], "nemlig_product_1_next.json")
+
+    def test_this_week_only_by_default(self):
+        seq = self.Seq()
+        passes, errors = fetch_nemlig_weeks(seq, ["1"])
+        self.assertEqual((len(passes), len(seq.urls)), (1, 3))
 
 
 class PantExclusionTest(unittest.TestCase):

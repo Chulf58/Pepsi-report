@@ -11,7 +11,7 @@ import csv
 import os
 import math
 import statistics
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, field, fields
 from datetime import date, timedelta
 
 NOT_ENOUGH = "not enough history yet"
@@ -38,12 +38,15 @@ class Observation:
     valid_to: str
     campaign: bool
     url: str
+    # Where the price was read (nemlig's delivery slot and zone). Shown in the report; not a
+    # history column, so data/history.csv keeps its columns.
+    slot: str = field(default="", compare=False, metadata={"persist": False})
 
     def key(self):
         return (self.source, self.source_id, self.price_dkk, self.valid_from)
 
 
-HEADER = [f.name for f in fields(Observation)]
+HEADER = [f.name for f in fields(Observation) if f.metadata.get("persist", True)]
 
 
 def dedupe(observations):
@@ -74,7 +77,7 @@ def append_history(path, observations):
                              % (path, ",".join(header), ",".join(HEADER)))
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "a", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=HEADER)
+        writer = csv.DictWriter(f, fieldnames=HEADER, extrasaction="ignore")
         if new_file:
             writer.writeheader()
         for o in observations:
@@ -134,3 +137,37 @@ def percent_vs(kr_per_l, base):
     if whole == 0:
         return "0%"
     return "%s%d%%" % ("-" if pct < 0 else "+", whole)
+
+
+def weekly_lows(rows, run_date, weeks=WINDOW_WEEKS):
+    """Lowest kr/L per product, store and ISO week for the last `weeks` weeks up to run_date.
+
+    Returns {product: {store: {week label: kr/L}}}; a week with no row for a store is simply
+    absent, so the report leaves it blank. The label is 'W43', or '25-W52' for another ISO year.
+    """
+    year = run_date.isocalendar()[0]
+    labels = {}
+    for i in range(weeks):
+        iso = (run_date - timedelta(weeks=i)).isocalendar()
+        labels[(iso[0], iso[1])] = "W%02d" % iso[1] if iso[0] == year else "%02d-W%02d" % (iso[0] % 100, iso[1])
+    out = {}
+    for r in rows:
+        day = date.fromisoformat(r["run_date"])
+        iso = day.isocalendar()
+        label = labels.get((iso[0], iso[1]))
+        if label is None or day > run_date:
+            continue
+        cell = out.setdefault(r["product"], {}).setdefault(r["store"], {})
+        kr = float(r["kr_per_l"])
+        cell[label] = min(kr, cell.get(label, kr))
+    return out
+
+
+def week_labels(run_date, weeks=WINDOW_WEEKS):
+    """The column labels for weekly_lows, oldest first."""
+    year = run_date.isocalendar()[0]
+    out = []
+    for i in reversed(range(weeks)):
+        iso = (run_date - timedelta(weeks=i)).isocalendar()
+        out.append("W%02d" % iso[1] if iso[0] == year else "%02d-W%02d" % (iso[0] % 100, iso[1]))
+    return out

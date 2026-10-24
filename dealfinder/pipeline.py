@@ -6,8 +6,12 @@ from dataclasses import dataclass, field
 
 from .history import Observation, dedupe
 from .match import KEEP, QUARANTINE, UNRELATED, VARIANTS, classify_with_ids, is_danish_dealer
-from .parse import (BOTTLE, container_kind, copenhagen_date, pant_per_container, pant_status,
-                    parse_packs, parse_stated_kr_per_l, resolve_volume)
+from .parse import (BOTTLE, PackParse, container_kind, copenhagen_date, pant_per_container, pant_status,
+                    pack_tied_to, parse_packs, parse_stated_kr_per_l, resolve_volume)
+
+
+UPCOMING_NOTE = "next week, nemlig slot"
+PEPSI_MAX_NAME = r"pepsi[\s-]*max"
 
 
 class RowError(ValueError):
@@ -46,6 +50,8 @@ class Outcome:
     known: dict = field(default_factory=dict)
     # (source, product id, store, text) of listed rows that matched by text, not by id.
     text_matched: list = field(default_factory=list)
+    # Next week's nemlig prices that differ from this week's: listed, never written to history.
+    upcoming: list = field(default_factory=list)
 
     def drop_bottle(self, store):
         self.bottles_dropped += 1
@@ -166,6 +172,11 @@ def _tjek_row(o, today, run_id, outcome):
             valid_to.isoformat(), url, why))
 
     packs = parse_packs(text)
+    if status == KEEP and len(packs.volumes) > 1 and not packs.ambiguous:
+        # A mixed flyer row: use the pack written directly before "Pepsi Max".
+        tied = pack_tied_to(text, PEPSI_MAX_NAME)
+        if tied:
+            packs = PackParse([tied], None)
     field_vol, field_unit = _field_sizes(o.get("quantity"))
     # Tjek's quantity fields are noisy (792 cl for a 24-can case); use them only when
     # the text names no size.
@@ -309,7 +320,7 @@ def normalize_rema(products, today, run_id, outcome):
                 outcome.row_errors.append(("REMA", "product %s price skipped: %s" % (pid, e)))
 
 
-def _nemlig_product(p, today, run_id, outcome):
+def _nemlig_product(p, today, run_id, outcome, slot="", normal_from=None):
     pid = p.get("Id")
     if not isinstance(pid, str) or not pid:
         raise RowError("missing product id")
@@ -371,12 +382,12 @@ def _nemlig_product(p, today, run_id, outcome):
             run_id=run_id, run_date=today.isoformat(), product=product, source="nemlig",
             source_id=source_id, product_id=pid, store="nemlig.com", description=text,
             pack=pack, volume_l=vol, price_dkk=shown_price, kr_per_l=kr,
-            valid_from=valid_from, valid_to=valid_to, campaign=is_campaign, url=url),
+            valid_from=valid_from, valid_to=valid_to, campaign=is_campaign, url=url, slot=slot),
             matched_by)
 
     pack = _pack_text(vol, packs.packs)
     # The normal price has no validity dates; it is the price seen on this run's day.
-    observe(pid, price, pack, today.isoformat(), "", False)
+    observe(pid, price, pack, normal_from or today.isoformat(), "", False)
     if not campaign:
         return
     start = copenhagen_date(campaign.get("IntervalStart"))
@@ -396,18 +407,24 @@ def _nemlig_product(p, today, run_id, outcome):
             end.isoformat(), True)
 
 
-def normalize_nemlig(products, today, run_id, outcome):
+def normalize_nemlig(products, today, run_id, outcome, slot="", normal_from=None):
     for p in products:
         try:
             if not isinstance(p, dict):
                 raise RowError("product is not an object")
-            _nemlig_product(p, today, run_id, outcome)
+            _nemlig_product(p, today, run_id, outcome, slot, normal_from)
         except ValueError as e:  # RowError, or a bad timestamp from copenhagen_date
             pid = p.get("Id") if isinstance(p, dict) else None
             outcome.row_errors.append(("nemlig", "product %s skipped: %s" % (pid, e)))
 
 
-def build(tjek_offers, rema_products, today, run_id, nemlig_products=(), known=None):
+def slot_date(slot):
+    """The calendar date (YYYY-MM-DD) in a nemlig slot text such as '2026103112-120-240, zone 1'."""
+    return "%s-%s-%s" % (slot[:4], slot[4:6], slot[6:8])
+
+
+def build(tjek_offers, rema_products, today, run_id, nemlig_products=(), known=None,
+          nemlig_slot="", nemlig_next=(), nemlig_next_slot=""):
     outcome = Outcome(known=known or {})
     # The same offer comes back from several search centres and queries.
     by_id, no_id = {}, []
@@ -418,7 +435,15 @@ def build(tjek_offers, rema_products, today, run_id, nemlig_products=(), known=N
             no_id.append(o if isinstance(o, dict) else {})
     normalize_tjek(no_id + list(by_id.values()), today, run_id, outcome)
     normalize_rema(rema_products, today, run_id, outcome)
-    normalize_nemlig(nemlig_products, today, run_id, outcome)
+    normalize_nemlig(nemlig_products, today, run_id, outcome, nemlig_slot)
+    if nemlig_next:
+        # Next week's slot: keep only what differs from this week, dated from that slot.
+        scratch = Outcome(known=outcome.known)
+        normalize_nemlig(nemlig_next, today, run_id, scratch, nemlig_next_slot,
+                         slot_date(nemlig_next_slot))
+        now = {(o.source_id, o.price_dkk) for o in outcome.observations}
+        outcome.upcoming = [o for o in dedupe(scratch.observations)
+                            if (o.source_id, o.price_dkk) not in now]
     outcome.observations = dedupe(outcome.observations)
     outcome.variants = dedupe(outcome.variants)
     seen, unique = set(), []

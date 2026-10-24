@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # Weekly price run for this PC (ruling weekly-price-run-on-this-pc-commits-history-csv).
 #
-# Pulls main, runs the deal finder, commits ONLY data/history.csv, pushes to main
-# (never forced) and shows a Windows notification. Everything is logged to
+# Pulls main, runs the deal finder, commits ONLY data/history.csv and REPORT.md (rulings
+# weekly-price-run-on-this-pc-commits-history-csv and phone-report-md-committed-to-public-repo),
+# pushes to main (never forced) and shows a Windows notification. Everything is logged to
 # out/last-run.log. Exit status: 0 OK, 2 the finder reported source errors (history was
 # still committed), 1 anything else (nothing is committed on a crash or a refusal).
 #
 # Safety rules: local main must equal origin/main before the run (a commit left local by
 # an earlier failed push is reported, never stacked on), and the outgoing range
-# origin/main..HEAD must be exactly one commit that changes only data/history.csv.
+# origin/main..HEAD must be exactly one commit that changes only data/history.csv and
+# REPORT.md.
 # Every failure, including a failed start-up, ends in a notification.
 #
 # Overrides, used by tests/test_weekly_run.py:
@@ -25,6 +27,8 @@ DEALFINDER_CMD="${DEALFINDER_CMD:-python3 -m dealfinder}"
 BRANCH=main
 ORIGIN_REF="refs/remotes/origin/$BRANCH"
 HISTORY=data/history.csv
+REPORT=REPORT.md
+FILES_TEXT="$HISTORY and $REPORT"
 LOG="$REPO/out/last-run.log"
 FINDER_OUT="$LOG.finder"
 LOG_OK=0   # set once the log file is open; until then messages go to stderr only
@@ -78,21 +82,42 @@ rebase_in_progress() {
     [ -d "$(git rev-parse --git-path rebase-merge)" ] || [ -d "$(git rev-parse --git-path rebase-apply)" ]
 }
 
-# Exactly one commit may leave this machine, and it may change only data/history.csv.
+# Reads file names on stdin; succeeds when there is at least one and each is history or report.
+only_allowed_files() {
+    local f seen=0
+    while IFS= read -r f; do
+        case "$f" in
+            "$HISTORY"|"$REPORT") seen=1 ;;
+            *) return 1 ;;
+        esac
+    done
+    [ "$seen" = 1 ]
+}
+
+# Exactly one commit may leave this machine, and it may change only data/history.csv and
+# REPORT.md.
 check_outgoing() {
-    local count files
+    local count
     count="$(git rev-list --count "$ORIGIN_REF..HEAD")" || return 1
-    files="$(git diff --name-only "$ORIGIN_REF..HEAD")" || return 1
-    [ "$count" = 1 ] && [ "$files" = "$HISTORY" ]
+    [ "$count" = 1 ] || return 1
+    git diff --name-only "$ORIGIN_REF..HEAD" | only_allowed_files
 }
 
 # Needs exactly one valid 'Offers kept:' line and one 'Source errors:' line; sets
-# offers_line, errors_line and offers (the sum of the per-product counts).
+# offers_line, errors_line and offers (the sum of the per-product counts). One optional
+# 'Notification:' line carries the good-offers text for the notification (note, else empty).
 parse_finder_output() {
-    local n_offers n_errors
+    local n_offers n_errors n_notes
     n_offers="$(grep -c '^Offers kept:' "$FINDER_OUT" || true)"
     n_errors="$(grep -c '^Source errors:' "$FINDER_OUT" || true)"
     [ "$n_offers" = 1 ] && [ "$n_errors" = 1 ] || return 1
+    n_notes="$(grep -c '^Notification:' "$FINDER_OUT" || true)"
+    [ "$n_notes" = 0 ] || [ "$n_notes" = 1 ] || return 1
+    note=""
+    if [ "$n_notes" = 1 ]; then
+        note="$(grep '^Notification:' "$FINDER_OUT")"
+        note="${note#Notification: }"
+    fi
     offers_line="$(grep '^Offers kept:' "$FINDER_OUT")"
     errors_line="$(grep '^Source errors:' "$FINDER_OUT")"
     printf '%s\n' "$offers_line" \
@@ -138,30 +163,40 @@ else
     status="Source errors, $offers offers"
     code=2
 fi
+if [ -n "$note" ]; then
+    status="$status; $note"
+fi
 title="Pepsi prices updated"
 
-# Only data/history.csv may have changed.
-others="$(git status --porcelain --untracked-files=no 2>/dev/null | grep -v -x " M $HISTORY" || true)"
+# Only data/history.csv and REPORT.md may have changed.
+others="$(git status --porcelain --untracked-files=no 2>/dev/null \
+    | grep -v -x " M $HISTORY" | grep -v -x " M $REPORT" || true)"
 if [ -n "$others" ]; then
     log "$others"
     fail "the finder left other tracked changes, nothing committed"
 fi
 
-if [ -z "$(git status --porcelain -- "$HISTORY")" ]; then
-    log "weekly-run: $HISTORY unchanged, nothing to commit"
+# Stage each of the two files that changed; REPORT.md is untracked on the very first run.
+staged_any=0
+for f in "$HISTORY" "$REPORT"; do
+    if [ -n "$(git status --porcelain -- "$f")" ]; then
+        git add -- "$f" >> "$LOG" 2>&1 || fail "git add failed"
+        staged_any=1
+    fi
+done
+if [ "$staged_any" = 0 ]; then
+    log "weekly-run: $FILES_TEXT unchanged, nothing to commit"
     finish "$code" "$status" "$title"
 fi
-
-git add -- "$HISTORY" >> "$LOG" 2>&1 || fail "git add failed"
-if [ "$(git diff --cached --name-only)" != "$HISTORY" ]; then
+if ! git diff --cached --name-only | only_allowed_files; then
     git reset -q >> "$LOG" 2>&1
-    fail "staged files are not exactly $HISTORY, nothing committed"
+    fail "staged files are not exactly $FILES_TEXT, nothing committed"
 fi
 
 git commit -q -m "Weekly prices $(date +%F)" -m "$offers_line
 $errors_line" >> "$LOG" 2>&1 || fail "git commit failed"
 
-check_outgoing || fail "outgoing range is not exactly one commit changing only $HISTORY, not pushing"
+check_outgoing || fail "outgoing range is not exactly one commit changing only $FILES_TEXT, not pushing"
 if ! git push origin "$BRANCH" >> "$LOG" 2>&1; then
     log "weekly-run: push rejected, pulling with rebase once"
     if ! git pull --rebase origin "$BRANCH" >> "$LOG" 2>&1; then
@@ -173,7 +208,7 @@ if ! git push origin "$BRANCH" >> "$LOG" 2>&1; then
         fail "rebase failed, the commit stays local"
     fi
     git fetch origin "+refs/heads/$BRANCH:$ORIGIN_REF" >> "$LOG" 2>&1 || fail "git fetch failed"
-    check_outgoing || fail "after the rebase the outgoing range is not exactly one commit changing only $HISTORY, not pushing"
+    check_outgoing || fail "after the rebase the outgoing range is not exactly one commit changing only $FILES_TEXT, not pushing"
     git push origin "$BRANCH" >> "$LOG" 2>&1 || fail "push failed twice, the commit stays local"
 fi
 

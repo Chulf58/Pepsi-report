@@ -67,10 +67,18 @@ class OfflineRunTest(unittest.TestCase):
             json.dump({}, f)
         return d
 
-    def run_cli(self, today, fixtures=FIXTURES):
+    def with_limits(self, fx):
+        with open(os.path.join(fx, "products.json"), "w", encoding="utf-8") as f:
+            json.dump({"good_offer": {"max_kr_per_l": {"Pepsi Max": 10, "Cult Energy": 12},
+                                      "below_average_percent": 10}}, f)
+        return fx
+
+    def run_cli(self, today, fixtures=FIXTURES, report_md=None):
         buf = io.StringIO()
         products = os.path.join(fixtures, "products.json")
         extra = ["--products", products] if os.path.exists(products) else []
+        if report_md:
+            extra += ["--report-md", report_md]
         with redirect_stdout(buf):
             code = main(["--offline", fixtures, "--history", self.history,
                          "--out", self.out, "--today", today] + extra)
@@ -93,7 +101,7 @@ class OfflineRunTest(unittest.TestCase):
             w.writeheader()
             for i, (run_date, kr) in enumerate(weekly):
                 w.writerow({"run_id": run_date + "T06:00:00Z", "run_date": run_date,
-                            "product": "Pepsi Max", "source": "seed", "source_id": str(i),
+                            "product": "Pepsi Max", "source": "seed", "source_id": str(i), "store": "SeedStore",
                             "kr_per_l": kr})
 
     def test_real_fixture_run(self):
@@ -103,6 +111,7 @@ class OfflineRunTest(unittest.TestCase):
         # Cans only; under 1 L without a bottle word counts as a can.
         self.assertEqual(sorted((r["store"], r["pack"], r["kr_per_l"]) for r in rows), [
             ("365discount", "24 x 0.33 L cans", "9.47"),
+            ("Bilka", "24 x 0.33 L cans", "9.47"),
             ("Løvbjerg", "24 x 0.33 L cans", "10.1"),
             ("REMA 1000", "0.33 L can", "10.61"),
             ("REMA 1000", "0.33 L can", "20.88"),
@@ -111,24 +120,26 @@ class OfflineRunTest(unittest.TestCase):
             ("nemlig.com", "6 x 0.33 L cans", "20.83"),
             ("nemlig.com", "6 x 0.33 L cans, 2 for 80.00", "20.2"),
         ])
-        self.assertIn("Offers kept: Pepsi Max: 8, Cult Energy: 0", summary)
+        self.assertIn("Offers kept: Pepsi Max: 9, Cult Energy: 0", summary)
         self.assertIn("Out of stock skipped (nemlig): 1", summary)  # 5061661
-        self.assertIn("Requests: nemlig 5, rema 2, tjek 9", summary)
+        self.assertIn("Requests: nemlig 8, rema 2, tjek 9", summary)
         # Every stored row carries its source product id.
         self.assertTrue(all(r["product_id"] for r in rows))
         campaign = [r for r in rows if r["source_id"] == "5007899@campaign:2026-10-19"][0]
         self.assertEqual((campaign["price_dkk"], campaign["valid_from"], campaign["valid_to"]),
                          ("40.0", "2026-10-19", "2026-10-25"))
         # REMA ids on the confirmed list are not reported as text matches; Tjek rows are.
-        self.assertIn("Matched by text, not by a confirmed id: 3", summary)
+        self.assertIn("Matched by text, not by a confirmed id: 4", summary)
         self.assertIn("Matched by text", self.report_html())
         self.assertIn("Bottles dropped: 9", summary)
         self.assertIn("BorderShop 2", summary)
         report = self.report_rows()
         quarantined = {(r["store"], r["reason"]) for r in report if r["status"] == "quarantine"}
-        self.assertIn(("Bilka", "several pack sizes in text: 5.94, 7.92 L"), quarantined)
+        # Bilka's mixed flyer row is recovered: 75 kr for the 24 x 33 cl directly before
+        # "Pepsi Max" is 9.47 kr/L. Løvbjerg's "/6/20 ds" row stays quarantined.
+        self.assertNotIn("Bilka", {store for store, _ in quarantined})
         self.assertIn(("Løvbjerg", "alternative pack counts in text (/6/20 ds)"), quarantined)
-        self.assertEqual(len([r for r in report if r["status"] == "quarantine"]), 2)
+        self.assertEqual(len([r for r in report if r["status"] == "quarantine"]), 1)
         stores = {r["store"] for r in report}
         self.assertFalse(stores & {"Netto", "SuperBrugsen", "Kvickly", "MENY", "BorderShop"})
         # No % before 4 weeks of history; the cell stays blank.
@@ -140,7 +151,9 @@ class OfflineRunTest(unittest.TestCase):
                   if r["status"] == "offer" and r["section"] == section]
             self.assertEqual(kr, sorted(kr))
         self.assertEqual([(r["store"], r["kr_per_l"], r["valid_from"]) for r in report
-                          if r["section"] == "later"], [("REMA 1000", "10.61", "2026-10-29")])
+                          if r["section"] == "later"],
+                         [("REMA 1000", "10.61", "2026-10-29"),
+                          ("nemlig.com", "20.2", "2026-10-26")])
         html = self.report_html()
         self.assertIn("Quarantine", html)
         self.assertNotIn('<h2 class="err">Source errors', html)
@@ -275,6 +288,120 @@ class OfflineRunTest(unittest.TestCase):
         self.assertIn("rema_page_1.json", html)
         # Tjek observations are still recorded.
         self.assertTrue(load_history(self.history))
+
+    def test_nemlig_slot_and_next_week_prices(self):
+        code, summary = self.run_cli("2026-10-24")
+        self.assertEqual(code, 0, summary)
+        nemlig = [r for r in self.report_rows() if r["store"] == "nemlig.com"]
+        self.assertTrue(all(r["delivery_slot"] == "2026102414-60-240, zone 1" or
+                            r["note"] == "next week, nemlig slot" for r in nemlig))
+        self.assertIn("2026102414-60-240, zone 1", {r["delivery_slot"] for r in nemlig})
+        later = [r for r in nemlig if r["section"] == "later"]
+        # The 2-for-80 campaign of 5007899 runs again from 2026-10-26; the other nemlig
+        # prices are the same next week and are not repeated.
+        self.assertEqual([(r["valid_from"], r["pack"], r["note"], r["delivery_slot"])
+                          for r in later],
+                         [("2026-10-26", "6 x 0.33 L cans, 2 for 80.00", "next week, nemlig slot",
+                           "2026103114-60-240, zone 1")])
+        self.assertIn("Next week's nemlig prices listed (not in history): 1", summary)
+        # Next week's prices and the slot never reach history.csv.
+        rows = load_history(self.history)
+        self.assertNotIn("slot", rows[0])
+        self.assertFalse([r for r in rows if r["valid_from"] == "2026-10-26"])
+
+    def test_good_offers_flag_summary_and_notification(self):
+        code, summary = self.run_cli("2026-10-24")
+        self.assertEqual(code, 0, summary)
+        # data/products.json: Pepsi Max under 10 kr/L. 365discount and Bilka are both 9.47.
+        self.assertIn("Good offers: 2\n", summary)
+        self.assertIn("Notification: 2 good offers: 365discount 9.47, Bilka 9.47\n", summary)
+        flags = {(r["store"], r["flag"]) for r in self.report_rows() if r["flag"]}
+        self.assertEqual(flags, {("365discount", "good offer: under 10 kr/L"),
+                                 ("Bilka", "good offer: under 10 kr/L")})
+        html = self.report_html()
+        self.assertEqual(html.count('<tr class="good">'), 2)
+        self.assertIn("<th>Flag</th>", html)
+        self.assertIn("Offers kept: Pepsi Max: 9, Cult Energy: 0", summary)
+
+    def test_no_good_offers_still_gives_a_notification_line(self):
+        code, summary = self.run_cli("2026-10-24", self.with_limits(self.fixture([
+            tjek("p", "Pepsi Max", "6 x 33 cl ds", 25.0)])))
+        self.assertIn("Good offers: 0\n", summary)
+        self.assertIn("Notification: no good offers\n", summary)
+
+    def test_below_average_flag_after_four_weeks(self):
+        # Mean 12.0 over four weeks; 10.5 kr/L is not under the fixed 10, but 12.5% below 12.
+        self.seed([("2026-09-28", "12"), ("2026-10-05", "12"), ("2026-10-12", "12"),
+                   ("2026-10-19", "12")])
+        rows = [tjek("p", "Pepsi Max", "6 x 33 cl ds", 20.79)]  # 20.79 / 1.98 L = 10.5 kr/L
+        code, summary = self.run_cli("2026-10-24", self.with_limits(self.fixture(rows)))
+        flagged = [r for r in self.report_rows() if r["flag"]]
+        self.assertEqual([r["flag"] for r in flagged],
+                         ["good offer: 10% or more below the 12-week average"])
+
+    def test_report_md_is_written_with_the_asked_sections(self):
+        md = os.path.join(self.tmp, "REPORT.md")
+        code, summary = self.run_cli("2026-10-24", report_md=md)
+        with open(md, encoding="utf-8") as f:
+            text = f.read()
+        for heading in ("# Pepsi Max and Cult Energy prices", "## Notification", "## Cheapest now",
+                        "## Good offers", "## Available now", "## Starts later", "## Coverage",
+                        "## Weekly low per store (kr/L)"):
+            self.assertIn(heading, text)
+        self.assertIn("Run date: 2026-10-24", text)
+        self.assertIn("Last successful collection: 2026-10-24 (0 days before this run)", text)
+        self.assertIn("2 good offers: 365discount 9.47, Bilka 9.47", text)
+        self.assertIn("| Chain | Accepted |", text)
+        self.assertIn("Lidl | not seen this run |", text)
+        self.assertIn("| Pepsi Max | 365discount |", text.replace("  ", " "))
+        # The phone report is compact: no HTML and no per-row offer text.
+        self.assertNotIn("<", text)
+        self.assertTrue(text.endswith("\n"))
+
+    def test_offline_run_writes_no_report_md_by_default(self):
+        self.run_cli("2026-10-24")
+        self.assertFalse(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "REPORT.md")))
+
+    def test_old_last_collection_warns_in_summary_html_and_md(self):
+        # A run with source errors is not a successful collection; the last good one is old.
+        self.seed([("2026-10-05", "9")])
+        partial = os.path.join(self.tmp, "partial")
+        os.mkdir(partial)
+        for name in ("tjek_pepsi_max.json", "tjek_cult.json", "tjek_pepsi.json"):
+            shutil.copy(os.path.join(FIXTURES, name), partial)
+        md = os.path.join(self.tmp, "REPORT.md")
+        code, summary = self.run_cli("2026-10-24", fixtures=partial, report_md=md)
+        self.assertEqual(code, 2)
+        self.assertIn("Last successful collection: 2026-10-05 (19 days before this run)", summary)
+        self.assertIn("WARNING: the last successful collection is 19 days old", summary)
+        self.assertIn("WARNING", self.report_html())
+        with open(md, encoding="utf-8") as f:
+            self.assertIn("WARNING", f.read())
+
+    def test_weekly_low_view_leaves_missing_weeks_blank(self):
+        self.seed([("2026-10-05", "9"), ("2026-10-19", "11")])
+        self.run_cli("2026-10-24", self.fixture([tjek("p", "Pepsi Max", "6 x 33 cl ds", 25.0)]))
+        html = self.report_html()
+        view = html[html.index("<h2>Weekly low per store</h2>"):html.index("<h2>Quarantine</h2>")]
+        self.assertIn("<th>W41</th>", view)
+        row = view[view.index("<td>SeedStore</td>"):]
+        row = row[:row.index("</tr>")]
+        cells = [c for c in row.split("<td") if c][1:]
+        self.assertEqual(len(cells), 12)
+        self.assertEqual(sum('>9.00<' in c or '>11.00<' in c for c in cells), 2)
+        self.assertEqual(sum('></td>' in c for c in cells), 10)
+
+    def test_price_per_can(self):
+        code, summary = self.run_cli("2026-10-24")
+        self.assertEqual(code, 0, summary)
+        by = {(r["store"], r["pack"]): r["kr_per_can"] for r in self.report_rows()
+              if r["status"] == "offer"}
+        # 75 kr for 24 cans is 3.125, rounded half up; "2 for 80" is 40 kr for 6 cans.
+        self.assertEqual(by[("365discount", "24 x 0.33 L cans")], "3.13")
+        self.assertEqual(by[("nemlig.com", "6 x 0.33 L cans, 2 for 80.00")], "6.67")
+        self.assertIn("<th>kr/can</th>", self.report_html())
+        self.assertIn("3.13", self.report_html())
 
     def test_starts_later_is_split_from_available_now(self):
         # On 2026-10-24 REMA's offer valid from 2026-10-29 is not for sale yet.

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from datetime import date
 
-from dealfinder.history import (NOT_ENOUGH, Baseline, Observation, append_history,
+from dealfinder.history import (HEADER, NOT_ENOUGH, Baseline, Observation, append_history,
                                 baseline, dedupe, load_history, lowest_seen_text,
                                 percent_vs)
 
@@ -107,6 +107,10 @@ def obs(source_id, price=10.0, source="tjek", valid_from="2026-10-22"):
 
 
 class DedupeAndStorageTest(unittest.TestCase):
+    def test_slot_is_not_a_history_column(self):
+        self.assertNotIn("slot", HEADER)
+        self.assertEqual(HEADER[-1], "url")
+
     def test_within_run_dedupe(self):
         got = dedupe([obs("a"), obs("a"), obs("b"), obs("a", source="rema"), obs("a", price=12.0)])
         self.assertEqual([(o.source, o.source_id, o.price_dkk) for o in got],
