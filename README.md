@@ -104,7 +104,8 @@ The pieces are in `scripts/`:
 - `notify.ps1` shows the notification with built-in Windows PowerShell 5.1 APIs. If the
   toast fails it falls back to a balloon tip, then to `msg.exe`, and logs which one it
   used. Call it with the status text as `-Status` (`-Message` is an alias, and the text
-  also works as the first positional argument); `-Title` and `-ReportPath` are optional:
+  also works as the first positional argument); `-Title` and `-ReportPath` are optional, and `-NoLog` stops it appending its line to
+  `out/last-run.log` (the weekly script passes it and logs the line itself):
   `powershell.exe -File scripts\notify.ps1 -Status "OK, 8 offers"`. It exits non-zero if
   no notification could be shown.
 - `register-weekly-task.ps1` registers the task "PepsiReport weekly prices".

@@ -5,7 +5,8 @@
 .DESCRIPTION
   Call: notify.ps1 [-Status] <text> [-Title <text>] [-ReportPath <path>]. The status text
   (for example "OK, 8 offers") is the second line of the notification; -Message is an alias
-  for -Status.
+  for -Status. -NoLog stops it appending to out\last-run.log (weekly-run.sh passes it and
+  logs the printed line itself); a manual call writes the log.
 
   Uses only built-in Windows PowerShell 5.1 APIs (Windows.UI.Notifications toast under the
   PowerShell app id). If the toast fails, falls back to a balloon tip and then to msg.exe,
@@ -16,7 +17,8 @@ param(
     [Alias('Message')]
     [string]$Status = 'Done',
     [string]$Title = 'Pepsi prices updated',
-    [string]$ReportPath = ''
+    [string]$ReportPath = '',
+    [switch]$NoLog
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,6 +27,7 @@ $logPath = Join-Path (Split-Path -Parent $ReportPath) 'last-run.log'
 
 function Write-Log([string]$text) {
     Write-Output $text
+    if ($NoLog) { return }
     try { Add-Content -LiteralPath $logPath -Value $text -Encoding UTF8 }
     catch { [Console]::Error.WriteLine("notify.ps1: warning: cannot write $logPath ($($_.Exception.Message))") }
 }

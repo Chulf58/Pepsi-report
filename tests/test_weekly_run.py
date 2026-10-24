@@ -53,6 +53,7 @@ exit 0
 
 FAKE_NOTIFY = """#!/usr/bin/env bash
 printf '%s|%s\\n' "$1" "$2" >> "$NOTIFY_LOG"
+echo "fake notifier shown: $1"
 """
 
 
@@ -125,7 +126,10 @@ class WeeklyRunTest(unittest.TestCase):
         self.assertIn("scratch.txt", self.git(self.repo, "status", "--porcelain"))
         self.assertEqual(self.notifications(), ["OK, 5 offers|Pepsi prices updated"])
         with open(os.path.join(self.repo, "out", "last-run.log")) as fh:
-            self.assertIn("Offers kept:", fh.read())
+            log = fh.read()
+        self.assertIn("Offers kept:", log)
+        # the notifier's stdout is captured and appended by the script itself
+        self.assertEqual(log.count("fake notifier shown: OK, 5 offers"), 1)
 
     def test_source_errors_still_commit_and_exit_2(self):
         done = self.run_script("errors")

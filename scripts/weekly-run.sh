@@ -42,17 +42,21 @@ run_notifier() {
     else
         powershell.exe -NoProfile -ExecutionPolicy Bypass \
             -File "$(wslpath -w "$SCRIPT_DIR/notify.ps1")" \
-            -Status "$1" -Title "$2"
+            -Status "$1" -Title "$2" -NoLog
     fi
 }
 
-# The notifier runs even when the log cannot be opened: its output then goes to stderr.
+# The notifier runs even when the log cannot be opened: log() then writes to stderr only.
+# This script is the only writer of the log during a run: the notifier's output is
+# captured here and appended afterwards (-NoLog stops notify.ps1 writing it itself, which
+# fails with "being used by another process" while the log is open).
 notify() {
-    if [ "$LOG_OK" = 1 ] && { : >> "$LOG"; } 2>/dev/null; then
-        run_notifier "$1" "$2" >> "$LOG" 2>&1
-    else
-        run_notifier "$1" "$2" >&2
-    fi || log "weekly-run: notifier failed (see above)"
+    local out rc
+    out="$(run_notifier "$1" "$2" 2>&1)"
+    rc=$?
+    out="${out//$'\r'/}"
+    if [ -n "$out" ]; then log "$out"; fi
+    if [ "$rc" -ne 0 ]; then log "weekly-run: notifier failed (exit $rc)"; fi
 }
 
 # finish <exit code> <status text> <notification title>
