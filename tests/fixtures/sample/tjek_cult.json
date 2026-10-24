@@ -1,0 +1,398 @@
+[
+ {
+  "id": "hWdD7kiVc2j3F0beQVKrM",
+  "heading": "Shaker eller Royal Club",
+  "description": "27,5-33 cl. Flere varianter. Ekskl. embl. Pr. liter max. 36,36",
+  "pricing": {
+   "price": 10,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 27.5,
+    "to": 33
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "bdf5A",
+  "dealer": {
+   "id": "bdf5A",
+   "name": "føtex",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://foetex.dk/"
+  },
+  "catalog_id": "xL4OW4sV"
+ },
+ {
+  "id": "cTrOJEMj9JCpNwPxsIcAo",
+  "heading": "Shaker eller Royal Club",
+  "description": "27,5 cl. fl. 33 cl. ds. Flere varianter. Ekskl. embl. Pr. liter max. 36.36 Frit valg",
+  "pricing": {
+   "price": 10,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 27.5,
+    "to": 33
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "93f13",
+  "dealer": {
+   "id": "93f13",
+   "name": "Bilka",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://bilka.dk/"
+  },
+  "catalog_id": "6id58iTh"
+ },
+ {
+  "id": "sy-LSjuOzEaZKZl0UtE-U",
+  "heading": "CULT SHAKER",
+  "description": "Lemon + Lime el. Astronaut\n6 x 0,33 l\n1 l = 30,30 DKK / 4,05 €\n8,01 EUR",
+  "pricing": {
+   "price": 60,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.33,
+    "to": 0.33
+   },
+   "pieces": {
+    "from": 6,
+    "to": 6,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "a68bpg",
+  "dealer": {
+   "id": "a68bpg",
+   "name": "Nielsen Scan-Shop",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://nielsen.discount/"
+  },
+  "catalog_id": "yMKwIsAJ"
+ },
+ {
+  "id": "euRN27xDvG-KRfIySdMfT",
+  "heading": "Shaker",
+  "description": "Flere varianter. 27,5 cl. Literpris 43,64 + pant. ",
+  "pricing": {
+   "price": 12,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 27.5,
+    "to": 27.5
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "0b1e8",
+  "dealer": {
+   "id": "0b1e8",
+   "name": "SuperBrugsen",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://superbrugsen.dk"
+  },
+  "catalog_id": "GVTN-w71"
+ },
+ {
+  "id": "1-oZMrzBiOqezjf6hJTkM",
+  "heading": "CULT Energy",
+  "description": "Original eller Sugar Free Kasse à 12 x 0,5 liter Liter = kr. 11,50",
+  "pricing": {
+   "price": 69,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.5,
+    "to": 0.5
+   },
+   "pieces": {
+    "from": 12,
+    "to": 12,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-09-30T22:00:00+0000",
+  "run_till": "2026-10-28T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.poetzsch-padborg.dk/soeg?search_query=451915%20452566"
+  },
+  "dealer_id": "d238Lg",
+  "dealer": {
+   "id": "d238Lg",
+   "name": "Poetzsch Padborg",
+   "country": {
+    "id": "DK"
+   },
+   "website": "https://www.poetzsch-padborg.dk/"
+  },
+  "catalog_id": "fnw6cH9D"
+ },
+ {
+  "id": "BQFcBfOM8xFX_E6JotcOz",
+  "heading": "Shaker",
+  "description": "Flere varianter. 27,5 cl. Literpris 43,64 + pant. ",
+  "pricing": {
+   "price": 12,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "cl",
+    "si": {
+     "symbol": "l",
+     "factor": 0.01
+    }
+   },
+   "size": {
+    "from": 27.5,
+    "to": 27.5
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-10-29T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "c1edq",
+  "dealer": {
+   "id": "c1edq",
+   "name": "Kvickly",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://kvickly.dk"
+  },
+  "catalog_id": "G5LCf8rw"
+ },
+ {
+  "id": "km5rPaiSLlweMjAZmp48D",
+  "heading": "Cult Energy",
+  "description": "Flere varianter 12 x 0,5 l Literpris 11,67",
+  "pricing": {
+   "price": 69.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.5,
+    "to": 0.5
+   },
+   "pieces": {
+    "from": 12,
+    "to": 12,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-06T22:00:00+0000",
+  "run_till": "2026-10-27T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "1e02AL",
+  "dealer": {
+   "id": "1e02AL",
+   "name": "fakta Tyskland",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://fakta.eu/"
+  },
+  "catalog_id": "HW_qqCIY"
+ },
+ {
+  "id": "QAkoTw1Q7FjC6VsDxxCjX",
+  "heading": "Cult Energy",
+  "description": "Flere varianter\n12 x 0,5 l\nLiterpris 11,67",
+  "pricing": {
+   "price": 69.99,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "l",
+    "si": {
+     "symbol": "l",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 0.5,
+    "to": 0.5
+   },
+   "pieces": {
+    "from": 12,
+    "to": 12,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-06T22:00:00+0000",
+  "run_till": "2026-12-31T22:59:59+0000",
+  "links": {
+   "webshop": null
+  },
+  "dealer_id": "1e02AL",
+  "dealer": {
+   "id": "1e02AL",
+   "name": "fakta Tyskland",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://fakta.eu/"
+  },
+  "catalog_id": "uApZkiu6"
+ },
+ {
+  "id": "TFSENJF4urTzBoxuAh3bS",
+  "heading": "CULT Gulvflise",
+  "description": "Italiensk gulvflise med flot farvespil. Den rektificerede flise findes i farverne Beige, White, Grey og Antracite. Høj slidstyrke. 60×60 cm.",
+  "pricing": {
+   "price": 199,
+   "pre_price": null,
+   "currency": "DKK"
+  },
+  "quantity": {
+   "unit": {
+    "symbol": "pcs",
+    "si": {
+     "symbol": "pcs",
+     "factor": 1
+    }
+   },
+   "size": {
+    "from": 1,
+    "to": 1
+   },
+   "pieces": {
+    "from": 1,
+    "to": 1,
+    "min": null,
+    "max": null
+   }
+  },
+  "run_from": "2026-10-22T22:00:00+0000",
+  "run_till": "2026-11-05T22:59:59+0000",
+  "links": {
+   "webshop": "https://www.xl-byg.dk/produkt/xl-byg-cult-gulvflise-60x60-beige-1222570"
+  },
+  "dealer_id": "9dd3p",
+  "dealer": {
+   "id": "9dd3p",
+   "name": "XL-BYG",
+   "country": {
+    "id": "DK"
+   },
+   "website": "http://xl-byg.dk/"
+  },
+  "catalog_id": "9A1VOYqQ"
+ }
+]

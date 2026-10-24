@@ -1,0 +1,37 @@
+{
+ "Id": "5007899",
+ "Name": "Pepsi Max (dåse)",
+ "Brand": "Pepsi",
+ "Description": "6 x 0,33 l / ex. pant / indh. sødestoffer / Pepsi",
+ "Price": 41.25,
+ "UnitPrice": "6,87 kr./Stk.",
+ "UnitPriceCalc": 6.88,
+ "UnitPriceLabel": "kr./Stk.",
+ "DiscountItem": true,
+ "Labels": [
+  "Sukkerfri",
+  "Discount"
+ ],
+ "Campaign": {
+  "MinQuantity": 2,
+  "MaxQuantity": 0,
+  "TotalPrice": 80.0,
+  "VariousPriceProductsCampaign": false,
+  "CampaignPrice": 80.0,
+  "CampaignUnitPrice": null,
+  "Type": "ProductCampaignMixOffer",
+  "Code": "KF",
+  "DiscountSavings": 0.0,
+  "IntervalStart": "2026-10-18T22:00:00Z",
+  "IntervalEnd": "2026-10-25T21:59:59Z",
+  "ShowCampaignInterval": false
+ },
+ "Availability": {
+  "IsDeliveryAvailable": true,
+  "IsAvailableInStock": true,
+  "ReasonMessageKeys": []
+ },
+ "Url": "pepsi-max-daase-5007899",
+ "Category": "Drikke",
+ "SubCategory": "Cola"
+}

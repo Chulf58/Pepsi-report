@@ -1,0 +1,136 @@
+{
+ "data": [
+  {
+   "id": 211186,
+   "name": "PEPSI MAX",
+   "underline": "50 CL.",
+   "description": null,
+   "prices": [
+    {
+     "price": 18.21,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2026-07-02T00:00:00+00:00",
+     "ending_at": "2099-12-31T00:00:00+00:00",
+     "deposit": 1.5,
+     "compare_unit": "ltr",
+     "compare_unit_price": 36.42
+    }
+   ]
+  },
+  {
+   "id": 211240,
+   "name": "PEPSI MAX",
+   "underline": "33 CL.",
+   "description": null,
+   "prices": [
+    {
+     "price": 6.89,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2026-07-02T00:00:00+00:00",
+     "ending_at": "2026-10-28T00:00:00+00:00",
+     "deposit": 1,
+     "compare_unit": "ltr",
+     "compare_unit_price": 20.88
+    }
+   ]
+  },
+  {
+   "id": 211242,
+   "name": "PEPSI MAX",
+   "underline": "1.98 LTR. / 6 PK.",
+   "description": null,
+   "prices": [
+    {
+     "price": 41.25,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": false,
+     "starting_at": "2026-07-02T00:00:00+00:00",
+     "ending_at": "2026-10-28T00:00:00+00:00",
+     "deposit": 6,
+     "compare_unit": "ltr",
+     "compare_unit_price": 20.83
+    }
+   ]
+  },
+  {
+   "id": 213942,
+   "name": "PEPSI MAX",
+   "underline": "1.5 LTR.",
+   "description": null,
+   "prices": [
+    {
+     "price": 12,
+     "price_over_max_quantity": 20.53,
+     "max_quantity": 6,
+     "is_advertised": true,
+     "is_campaign": true,
+     "starting_at": "2026-10-22T00:00:00+00:00",
+     "ending_at": "2026-10-24T00:00:00+00:00",
+     "deposit": 3,
+     "compare_unit": "ltr",
+     "compare_unit_price": 8
+    },
+    {
+     "price": 16,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": true,
+     "starting_at": "2026-10-25T00:00:00+00:00",
+     "ending_at": "2026-10-31T00:00:00+00:00",
+     "deposit": 3,
+     "compare_unit": "ltr",
+     "compare_unit_price": 10.67
+    }
+   ]
+  },
+  {
+   "id": 214473,
+   "name": "PEPSI MAX",
+   "underline": "1.5 LTR. / LIME",
+   "description": null,
+   "prices": [
+    {
+     "price": 12,
+     "price_over_max_quantity": 20.53,
+     "max_quantity": 6,
+     "is_advertised": true,
+     "is_campaign": true,
+     "starting_at": "2026-10-22T00:00:00+00:00",
+     "ending_at": "2026-10-24T00:00:00+00:00",
+     "deposit": 3,
+     "compare_unit": "ltr",
+     "compare_unit_price": 8
+    },
+    {
+     "price": 16,
+     "price_over_max_quantity": null,
+     "max_quantity": null,
+     "is_advertised": false,
+     "is_campaign": true,
+     "starting_at": "2026-10-25T00:00:00+00:00",
+     "ending_at": "2026-10-31T00:00:00+00:00",
+     "deposit": 3,
+     "compare_unit": "ltr",
+     "compare_unit_price": 10.67
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "current_page": 2,
+   "last_page": 2,
+   "per_page": 1000,
+   "total": 10
+  }
+ }
+}
