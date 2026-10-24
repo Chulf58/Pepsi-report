@@ -1,6 +1,8 @@
 # Pepsi Max and Cult Energy prices
 
-Run date: 2026-10-24. Run id: 2026-10-24T06:32:36.585845Z.
+The cheapest Pepsi Max right now is at 365discount and Bilka: 24 x 33 cl for 75 kr, which is 9.47 kr per liter or 3.13 kr per can, until 28 and 29 October. Both are flagged as good offers. Next is Løvbjerg at 10.10 kr/L. Coming up: nemlig.com has 24 x 33 cl for 82 kr (10.35 kr/L) from 31 October to 1 November. No Cult Energy offers from Danish chains this week. All sources answered.
+
+Run date: 2026-10-24. Run id: 2026-10-24T06:38:22.828896Z.
 Prices exclude pant; kr/L and kr/can are worked out from them.
 
 - Last successful collection: 2026-10-24 (0 days before this run)
