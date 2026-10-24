@@ -1,0 +1,143 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'; manifest-src 'self'">
+<meta name="theme-color" content="#0060c7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1114" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pepsi &amp; Cult">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Pepsi Max &amp; Cult</title><style>
+:root {
+  color-scheme: light dark;
+  --bg:#f4f5f7; --card:#ffffff; --ink:#14171a; --ink2:#3d4550; --muted:#5b6675; --line:#e2e5ea;
+  --pepsi:#0060c7; --cult:#c2410c;
+  --good-bg:#dcf3e2; --good-ink:#11602b; --warn-bg:#fff1d6; --warn-ink:#7a4b00;
+  --bad-bg:#fde2df; --bad-ink:#a1251b; --flag-bg:#f1f8f3;
+  --radius:18px; --shadow:0 1px 2px rgba(20,23,26,.06), 0 4px 14px rgba(20,23,26,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0f1114; --card:#1a1d21; --ink:#eef1f4; --ink2:#c9d0d8; --muted:#9ba5b2; --line:#2c3138;
+    --pepsi:#3b8ee0; --cult:#e06a1f;
+    --good-bg:#173d24; --good-ink:#93e3aa; --warn-bg:#3d2e0f; --warn-ink:#ffd27a;
+    --bad-bg:#47191a; --bad-ink:#ffaba2; --flag-bg:#16261c;
+    --shadow:none;
+  }
+}
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  padding:calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+          calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
+main { max-width:680px; margin:0 auto; }
+h1 { font-size:1.6rem; line-height:1.15; margin:4px 0 2px; letter-spacing:-.01em; }
+h2 { font-size:1.1rem; margin:28px 0 10px; display:flex; align-items:baseline; gap:8px; }
+h2 .count { font-size:.85rem; color:var(--muted); font-weight:600; }
+h3 { font-size:1rem; margin:0; }
+p { margin:0; }
+a { color:inherit; }
+.top { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.date { color:var(--muted); font-size:.95rem; }
+.pill { align-self:flex-start; display:inline-flex; align-items:center; gap:8px; min-height:32px;
+  padding:6px 12px; border-radius:999px; font-size:.9rem; font-weight:600; }
+.pill::before { content:""; width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
+.pill.fresh { background:var(--good-bg); color:var(--good-ink); }
+.pill.warn { background:var(--warn-bg); color:var(--warn-ink); }
+.pill.stale { background:var(--bad-bg); color:var(--bad-ink); }
+.card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  border:1px solid var(--line); padding:16px; min-width:0; }
+.summary p { color:var(--ink2); }
+.heroes { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
+.hero { border-top:6px solid var(--accent); display:flex; flex-direction:column; gap:6px; }
+.pepsi { --accent:var(--pepsi); } .cult { --accent:var(--cult); }
+.product { display:inline-flex; align-items:center; gap:6px; font-size:.85rem; font-weight:600; color:var(--ink2); }
+.product::before { content:""; width:10px; height:10px; border-radius:50%; background:var(--accent); flex:none; }
+.hero .store { font-size:1.15rem; font-weight:700; }
+.big { font-size:2.6rem; font-weight:800; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.big small { font-size:1rem; font-weight:600; color:var(--muted); letter-spacing:0; margin-left:4px; }
+.facts { color:var(--ink2); font-size:.95rem; font-variant-numeric:tabular-nums; }
+.until { font-weight:600; }
+.empty { color:var(--muted); }
+.badge { align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:4px 10px;
+  border-radius:999px; background:var(--good-bg); color:var(--good-ink); font-size:.85rem; font-weight:700; }
+.badge::before { content:"\2713"; }
+.why { color:var(--muted); font-size:.85rem; }
+ul.cards, ul.strip, ul.plain { list-style:none; margin:0; padding:0; }
+ul.cards { display:flex; flex-direction:column; gap:10px; }
+.offer { border-left:5px solid var(--accent); display:flex; flex-direction:column; gap:4px; }
+.offer.flagged { background:var(--flag-bg); border-color:var(--line); border-left-color:var(--accent);
+  box-shadow:inset 0 0 0 1px var(--good-bg), var(--shadow); }
+.row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+.offer .store { font-weight:700; font-size:1.05rem; overflow-wrap:anywhere; }
+.price { font-size:1.4rem; font-weight:800; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.price small { font-size:.8rem; font-weight:600; color:var(--muted); margin-left:2px; }
+.meta { color:var(--muted); font-size:.875rem; }
+.vs { font-weight:700; color:var(--ink2); }
+.note { font-style:italic; color:var(--muted); font-size:.875rem; }
+.desc { color:var(--muted); font-size:.8rem; overflow-wrap:anywhere; display:-webkit-box;
+  -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+a.go { align-self:flex-start; display:inline-flex; align-items:center; min-height:44px; padding:0 4px;
+  font-weight:600; color:var(--accent); text-underline-offset:3px; }
+ul.strip { display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding:2px 2px 10px;
+  margin:0 -16px; padding-left:16px; padding-right:16px; scroll-padding-left:16px; -webkit-overflow-scrolling:touch; }
+ul.strip > li { flex:0 0 min(78%, 300px); scroll-snap-align:start; }
+.charts { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px; }
+.chart svg { display:block; width:100%; height:auto; margin-top:8px; }
+.chart .sub { color:var(--muted); font-size:.85rem; }
+.chart .grid { stroke:var(--line); stroke-width:1; }
+.chart .axis { fill:var(--muted); font-size:11px; }
+.chart .label { fill:var(--ink); font-size:12px; font-weight:700; }
+.chart .line { fill:none; stroke:var(--accent); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
+.chart .pt { fill:var(--accent); stroke:var(--card); stroke-width:2; }
+.placeholder { margin-top:10px; padding:28px 12px; border:2px dashed var(--line); border-radius:12px;
+  text-align:center; color:var(--muted); }
+.caption { color:var(--muted); font-size:.85rem; margin-top:6px; }
+details { margin-top:10px; }
+details > summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-weight:600; list-style:none; }
+details > summary::-webkit-details-marker { display:none; }
+details > summary::after { content:"+"; margin-left:auto; font-size:1.3rem; color:var(--muted); }
+details[open] > summary::after { content:"\2212"; }
+details .inner { padding-top:6px; display:flex; flex-direction:column; gap:10px; }
+ul.plain > li { padding:8px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+ul.plain > li:first-child { border-top:0; }
+.err { color:var(--bad-ink); } .warnline { margin-top:10px; font-weight:600; }
+.chart details { margin-top:4px; }
+.chart details > summary { font-weight:500; color:var(--muted); font-size:.9rem; }
+footer { margin-top:28px; color:var(--muted); font-size:.8rem; text-align:center; }
+</style></head><body><main>
+<header class="top"><h1>Pepsi Max &amp; Cult</h1>
+<p class="date">Prices for 24 Oct 2026</p>
+<span class="pill fresh" id="fresh" data-run="2026-10-24">Fresh: collected 24 Oct</span>
+</header>
+<section class="card summary"><p>The cheapest Pepsi Max right now is at 365discount and Bilka: 24 x 33 cl for 75 kr, which is 9.47 kr per liter or 3.13 kr per can, until 28 and 29 October. Both are flagged as good offers. Next is Løvbjerg at 10.10 kr/L. Coming up: nemlig.com has 24 x 33 cl for 82 kr (10.35 kr/L) from 31 October to 1 November. No Cult Energy offers from Danish chains this week. All sources answered.</p></section>
+<h2>Best right now</h2>
+<div class="heroes"><section class="card hero hero-pepsi pepsi"><span class="product">Pepsi Max</span><span class="store">365discount</span><span class="big">3.13<small>kr/can</small></span><span class="facts">9.47 kr/L &middot; 24 x 33 cl for 75.00 kr</span><span class="until">until 28 Oct</span><span class="meta">Same price at Bilka</span><span class="badge">Good offer</span><span class="why">under 10 kr/L</span><a class="go" href="https://365discount.coop.dk" rel="noopener noreferrer">See offer</a></section><section class="card hero hero-cult cult"><span class="product">Cult Energy</span><p class="empty">No Cult Energy offer from Danish chains right now.</p></section></div>
+<h2>Available now <span class="count">9</span></h2>
+<section class="available offers"><ul class="cards"><li class="card offer pepsi flagged"><div class="row"><span class="store">365discount</span><span class="price">3.13<small>kr/can</small></span></div><div class="facts">24 x 33 cl &middot; 75.00 kr &middot; 9.47 kr/L</div><div class="meta">Pepsi Max &middot; 22 Oct to 28 Oct</div><span class="badge">Good offer</span><span class="why">under 10 kr/L</span><div class="desc">Faxe Kondi eller Pepsi Max* | Sælges i hele forpakninger | 24 x 33 cl. Literpris 9,47 + pant. 1 pakke.</div><a class="go" href="https://365discount.coop.dk" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi flagged"><div class="row"><span class="store">Bilka</span><span class="price">3.13<small>kr/can</small></span></div><div class="facts">24 x 33 cl &middot; 75.00 kr &middot; 9.47 kr/L</div><div class="meta">Pepsi Max &middot; 23 Oct to 29 Oct</div><span class="badge">Good offer</span><span class="why">under 10 kr/L</span><div class="desc">Øl- eller sodavandsmarked | 18x33 cl. ds. Royal Export, Royal Pilsner, Classic eller Heineken. 24x33 cl. ds. Pepsi Max eller Faxe Kondi. Gælder kun lukkede forpakninger. Ekskl. embl. Pr. liter max. 12.63 MAX. 6 RAMMER TIL DENNE PRIS</div><a class="go" href="https://bilka.dk/" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi flagged"><div class="row"><span class="store">365discount</span><span class="price">3.13<small>kr/can</small></span></div><div class="facts">24 x 33 cl &middot; 75.00 kr &middot; 9.47 kr/L</div><div class="meta">Pepsi Max &middot; 22 Oct to 28 Oct</div><span class="badge">Good offer</span><span class="why">under 10 kr/L</span><div class="desc">Faxe Kondi eller Pepsi Max* | 24 x 33 cl. Literpris 9,47 + pant.  | 1 pakke</div><a class="go" href="https://365discount.coop.dk" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><div class="row"><span class="store">Løvbjerg</span><span class="price">3.33<small>kr/can</small></span></div><div class="facts">24 x 33 cl &middot; 79.99 kr &middot; 10.10 kr/L</div><div class="meta">Pepsi Max &middot; 23 Oct to 29 Oct</div><div class="desc">Pepsi Max el. Faxe Kondi sodavand | 33 cl/24 ds | Pr ltr 10,10 | Excl pant</div><a class="go" href="http://www.lovbjerg.dk" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><div class="row"><span class="store">nemlig.com</span><span class="price">5.16<small>kr/can</small></span></div><div class="facts">24 x 33 cl &middot; 123.75 kr &middot; 15.62 kr/L</div><div class="meta">Pepsi Max &middot; from 24 Oct &middot; shelf price &middot; delivery slot 2026102412-120-240, zone 1</div><div class="desc">Pepsi Max (dåse) 24 x 0,33 l / ex. pant / indh. sødestoffer / Pepsi</div><a class="go" href="https://www.nemlig.com/pepsi-max-daase-5016248" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><div class="row"><span class="store">nemlig.com</span><span class="price">6.67<small>kr/can</small></span></div><div class="facts">6 x 33 cl &middot; 40.00 kr &middot; 20.20 kr/L</div><div class="meta">Pepsi Max &middot; 19 Oct to 25 Oct &middot; delivery slot 2026102412-120-240, zone 1</div><div class="desc">Pepsi Max (dåse) 6 x 0,33 l / ex. pant / indh. sødestoffer / Pepsi</div><a class="go" href="https://www.nemlig.com/pepsi-max-daase-5007899" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><div class="row"><span class="store">REMA 1000</span><span class="price">6.88<small>kr/can</small></span></div><div class="facts">6 x 33 cl &middot; 41.25 kr &middot; 20.83 kr/L</div><div class="meta">Pepsi Max &middot; 2 Jul to 28 Oct &middot; shelf price</div><div class="desc">PEPSI MAX 1.98 LTR. / 6 PK.</div><a class="go" href="https://shop.rema1000.dk/varer/211242" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><div class="row"><span class="store">nemlig.com</span><span class="price">6.88<small>kr/can</small></span></div><div class="facts">6 x 33 cl &middot; 41.25 kr &middot; 20.83 kr/L</div><div class="meta">Pepsi Max &middot; from 24 Oct &middot; shelf price &middot; delivery slot 2026102412-120-240, zone 1</div><div class="desc">Pepsi Max (dåse) 6 x 0,33 l / ex. pant / indh. sødestoffer / Pepsi</div><a class="go" href="https://www.nemlig.com/pepsi-max-daase-5007899" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><div class="row"><span class="store">REMA 1000</span><span class="price">6.89<small>kr/can</small></span></div><div class="facts">33 cl &middot; 6.89 kr &middot; 20.88 kr/L</div><div class="meta">Pepsi Max &middot; 2 Jul to 28 Oct &middot; shelf price</div><div class="desc">PEPSI MAX 33 CL.</div><a class="go" href="https://shop.rema1000.dk/varer/211240" rel="noopener noreferrer">See offer</a></li></ul></section>
+<h2>Coming up <span class="count">4</span></h2>
+<section class="coming"><ul class="strip"><li class="card offer pepsi"><span class="product">Pepsi Max</span><div class="row"><span class="store">nemlig.com</span><span class="price">3.42<small>kr/can</small></span></div><div class="facts">10.35 kr/L &middot; 24 x 33 cl for 82.00 kr</div><div class="until">from 31 Oct to 1 Nov</div><div class="note">next week, nemlig slot</div><a class="go" href="https://www.nemlig.com/pepsi-max-daase-5016248" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><span class="product">Pepsi Max</span><div class="row"><span class="store">REMA 1000</span><span class="price">3.50<small>kr/can</small></span></div><div class="facts">10.61 kr/L &middot; 33 cl for 3.50 kr</div><div class="until">from 29 Oct to 31 Oct</div><a class="go" href="https://rema1000.dk/" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><span class="product">Pepsi Max</span><div class="row"><span class="store">nemlig.com</span><span class="price">4.08<small>kr/can</small></span></div><div class="facts">12.37 kr/L &middot; 24 x 33 cl for 98.00 kr</div><div class="until">from 31 Oct</div><div class="note">next week, nemlig slot</div><a class="go" href="https://www.nemlig.com/pepsi-max-daase-5016248" rel="noopener noreferrer">See offer</a></li><li class="card offer pepsi"><span class="product">Pepsi Max</span><div class="row"><span class="store">nemlig.com</span><span class="price">6.67<small>kr/can</small></span></div><div class="facts">20.20 kr/L &middot; 6 x 33 cl for 40.00 kr</div><div class="until">from 31 Oct to 1 Nov</div><div class="note">next week, nemlig slot</div><a class="go" href="https://www.nemlig.com/pepsi-max-daase-5007899" rel="noopener noreferrer">See offer</a></li></ul></section>
+<h2>Price over time</h2>
+<div class="charts"><section class="card chart chart-pepsi pepsi"><span class="product">Pepsi Max</span><p class="sub">Lowest kr/L per week, last 12 weeks</p><div class="placeholder">The chart appears after 2 weeks of prices.<br>Weeks with prices so far: 1.</div></section><section class="card chart chart-cult cult"><span class="product">Cult Energy</span><p class="sub">Lowest kr/L per week, last 12 weeks</p><div class="placeholder">The chart appears after 2 weeks of prices.<br>Weeks with prices so far: 0.</div></section></div>
+<h2>Details</h2>
+<section class="card more">
+<details><summary>Source errors (0)</summary><div class="inner"><p class="meta">Every source answered.</p></div></details>
+<details><summary>Quarantined rows (1)</summary><div class="inner"><p class="meta">Rows that look relevant but could not be read safely. They are kept out of the price history.</p><ul class="plain"><li><strong>Løvbjerg</strong> &middot; Pepsi Max &middot; 79.99 kr<br><span class="meta">Pepsi Max, Faxe Kondi, Royal øl, Anarkist el. Booster | Udvalgte varianter | 33 cl/6/20 ds | el. 50 cl/8 ds | Pr ltr max  40,40</span><br><span class="note">alternative pack counts in text (/6/20 ds)</span><a class="go" href="http://www.lovbjerg.dk" rel="noopener noreferrer">See offer</a></li></ul></div></details>
+<details><summary>Coverage: 10 of 21 chains seen</summary><div class="inner"><ul class="plain"><li><strong>Netto</strong> &middot; 0 kept, 0 variants, 0 quarantined, 1 bottles dropped</li><li><strong>føtex</strong> &middot; not seen this run</li><li><strong>Bilka</strong> &middot; 1 kept, 0 variants, 0 quarantined, 0 bottles dropped</li><li><strong>Bilka ToGo</strong> &middot; not seen this run</li><li><strong>Salling</strong> &middot; not seen this run</li><li><strong>REMA 1000</strong> &middot; 3 kept, 0 variants, 0 quarantined, 3 bottles dropped</li><li><strong>Lidl</strong> &middot; not seen this run</li><li><strong>365discount</strong> &middot; 2 kept, 0 variants, 0 quarantined, 0 bottles dropped</li><li><strong>Coop 365</strong> &middot; not seen this run</li><li><strong>Kvickly</strong> &middot; 0 kept, 0 variants, 0 quarantined, 1 bottles dropped</li><li><strong>SuperBrugsen</strong> &middot; 0 kept, 0 variants, 0 quarantined, 1 bottles dropped</li><li><strong>Brugsen</strong> &middot; not seen this run</li><li><strong>Dagli&#x27;Brugsen</strong> &middot; not seen this run</li><li><strong>MENY</strong> &middot; 0 kept, 0 variants, 0 quarantined, 1 bottles dropped</li><li><strong>SPAR</strong> &middot; 0 kept, 0 variants, 0 quarantined, 1 bottles dropped</li><li><strong>Min Købmand</strong> &middot; not seen this run</li><li><strong>Løvbjerg</strong> &middot; 1 kept, 0 variants, 1 quarantined, 0 bottles dropped</li><li><strong>nemlig.com</strong> &middot; 3 kept, 0 variants, 0 quarantined, 0 bottles dropped</li><li><strong>ABC Lavpris</strong> &middot; not seen this run</li><li><strong>Let-Køb</strong> &middot; not seen this run</li><li><strong>Coop.dk</strong> &middot; not seen this run</li></ul></div></details>
+</section>
+<footer>Cans only. Prices exclude pant; kr/L and kr/can are worked out from them. Last successful collection: 2026-10-24 (0 days before this run).<br>Run 2026-10-24T07:05:56.406812Z.</footer>
+</main><script>
+(function () {
+  var p = document.getElementById('fresh');
+  if (!p) return;
+  var days = Math.floor((Date.now() - new Date(p.dataset.run + 'T00:00:00').getTime()) / 86400000);
+  if (days > 8) {
+    p.className = 'pill stale';
+    p.textContent += '; this page is ' + days + ' days old: the weekly run looks overdue';
+  }
+})();
+</script></body></html>

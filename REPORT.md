@@ -2,7 +2,7 @@
 
 The cheapest Pepsi Max right now is at 365discount and Bilka: 24 x 33 cl for 75 kr, which is 9.47 kr per liter or 3.13 kr per can, until 28 and 29 October. Both are flagged as good offers. Next is Løvbjerg at 10.10 kr/L. Coming up: nemlig.com has 24 x 33 cl for 82 kr (10.35 kr/L) from 31 October to 1 November. No Cult Energy offers from Danish chains this week. All sources answered.
 
-Run date: 2026-10-24. Run id: 2026-10-24T06:38:22.828896Z.
+Run date: 2026-10-24. Run id: 2026-10-24T07:05:56.406812Z.
 Prices exclude pant; kr/L and kr/can are worked out from them.
 
 - Last successful collection: 2026-10-24 (0 days before this run)
@@ -10,7 +10,7 @@ Prices exclude pant; kr/L and kr/can are worked out from them.
 
 ## Notification
 
-2 good offers: 365discount 9.47, Bilka 9.47
+3 good offers: 365discount 9.47, 365discount 9.47, Bilka 9.47
 
 ## Cheapest now
 
@@ -18,6 +18,7 @@ Prices exclude pant; kr/L and kr/can are worked out from them.
 
 ## Good offers
 
+- 365discount 9.47 kr/L, Pepsi Max (good offer: under 10 kr/L)
 - 365discount 9.47 kr/L, Pepsi Max (good offer: under 10 kr/L)
 - Bilka 9.47 kr/L, Pepsi Max (good offer: under 10 kr/L)
 
@@ -27,6 +28,7 @@ Prices exclude pant; kr/L and kr/can are worked out from them.
 |---|---|---|--:|--:|--:|--:|---|---|---|---|
 | Pepsi Max | 365discount | 24 x 0.33 L cans | 75.00 | 9.47 | 3.13 |  | 2026-10-22 | 2026-10-28 | good offer: under 10 kr/L |  |
 | Pepsi Max | Bilka | 24 x 0.33 L cans | 75.00 | 9.47 | 3.13 |  | 2026-10-23 | 2026-10-29 | good offer: under 10 kr/L |  |
+| Pepsi Max | 365discount | 24 x 0.33 L cans | 75.00 | 9.47 | 3.13 |  | 2026-10-22 | 2026-10-28 | good offer: under 10 kr/L |  |
 | Pepsi Max | Løvbjerg | 24 x 0.33 L cans | 79.99 | 10.10 | 3.33 |  | 2026-10-23 | 2026-10-29 |  |  |
 | Pepsi Max | nemlig.com | 24 x 0.33 L cans | 123.75 | 15.62 | 5.16 |  | 2026-10-24 |  |  | 2026102412-120-240, zone 1 |
 | Pepsi Max | nemlig.com | 6 x 0.33 L cans, 2 for 80.00 | 40.00 | 20.20 | 6.67 |  | 2026-10-19 | 2026-10-25 |  | 2026102412-120-240, zone 1 |
@@ -54,7 +56,7 @@ Prices exclude pant; kr/L and kr/can are worked out from them.
 | Salling | not seen this run |
 | REMA 1000 | 3 | 0 | 0 | 3 |
 | Lidl | not seen this run |
-| 365discount | 1 | 0 | 0 | 0 |
+| 365discount | 2 | 0 | 0 | 0 |
 | Coop 365 | not seen this run |
 | Kvickly | 0 | 0 | 0 | 1 |
 | SuperBrugsen | 0 | 0 | 0 | 1 |
