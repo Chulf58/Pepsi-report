@@ -133,6 +133,7 @@ def main(argv=None):
             "%s %d" % kv for kv in sorted(outcome.next_week.items()) if kv[1]) or "nothing"),
         "Bottles dropped: %d" % outcome.bottles_dropped,
         "Out of stock skipped (nemlig): %d" % outcome.out_of_stock,
+        "Duplicate offers merged: %d" % outcome.duplicates_merged,
         "Matched by text, not by a confirmed id: %d" % len(outcome.text_matched),
         "12-week average: %s" % "; ".join(history_text(p, b) for p, b in bases.items()),
         "Coverage: %d of %d chains seen; %s: %s" % (
